@@ -186,17 +186,37 @@ async function loadChats() {
 }
 
 async function newChat() {
-    chatHistory = [];
+    const welcomeContent = user 
+        ? `Fala, **${user.name || 'dev'}**! 👋 Sou o **Corvo Coder** 🐦.
+
+Você está logado e pronto para construir aplicações completas! Seu saldo de **50 créditos** está ativo no topo.
+
+**O que vamos criar hoje?** 🚀`
+        : `Fala! 👋 Sou o **Corvo Coder** 🐦.
+
+Você está no **Modo Convidado** com **10 créditos gratuitos** para experimentar.
+
+🎁 **Bônus:** [Crie uma conta gratuita](pages/register.html) ou [faça login](pages/login.html) para ganhar **50 créditos iniciais** e poder salvar todos os seus projetos!
+
+**O que você quer construir hoje?** 🚀`;
+
+    chatHistory = [{
+        id: 'welcome',
+        role: 'assistant',
+        content: welcomeContent,
+        time: formatTime(new Date())
+    }];
     currentChatId = null;
     codeVersions = [];
     currentVersionIndex = -1;
     currentFiles = {};
     document.getElementById('messages').innerHTML = '';
-    document.getElementById('welcomeScreen').style.display = 'flex';
+    document.getElementById('welcomeScreen').style.display = 'none'; // ocultado pois a mensagem de boas-vindas substitui
     document.getElementById('navActions').style.display = 'flex';
     const exportBtn = document.querySelector('.nav-action-btn.export');
     if (exportBtn) exportBtn.style.display = 'none';
     toggleSidebar();
+    renderMessages();
 }
 
 async function selectChat(id) {
@@ -1195,6 +1215,30 @@ async function init() {
             } catch (e) { console.error('Erro ao retomar chat ativo:', e); }
         }
     }
+
+    if (chatHistory.length === 0) {
+        const welcomeContent = user 
+            ? `Fala, **${user.name || 'dev'}**! 👋 Sou o **Corvo Coder** 🐦.
+
+Você está logado e pronto para construir aplicações completas! Seu saldo de **50 créditos** está ativo no topo.
+
+**O que vamos criar hoje?** 🚀`
+            : `Fala! 👋 Sou o **Corvo Coder** 🐦.
+
+Você está no **Modo Convidado** com **10 créditos gratuitos** para experimentar.
+
+🎁 **Bônus:** [Crie uma conta gratuita](pages/register.html) ou [faça login](pages/login.html) para ganhar **50 créditos iniciais** e poder salvar todos os seus projetos!
+
+**O que você quer construir hoje?** 🚀`;
+
+        chatHistory = [{
+            id: 'welcome',
+            role: 'assistant',
+            content: welcomeContent,
+            time: formatTime(new Date())
+        }];
+    }
+
     renderMessages();
     renderTemplates();
     setupDragDrop();
