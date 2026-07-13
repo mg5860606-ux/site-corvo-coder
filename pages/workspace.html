@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corvo Coder — Workspace</title>
+    <link rel="stylesheet" href="../css/workspace.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="workspace">
+        <header class="ws-toolbar">
+            <div class="ws-toolbar-left">
+                <a href="../index.html" class="ws-back" title="Voltar ao chat">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </a>
+                <div class="ws-logo">
+                    <img src="../logo.jpg" alt="Corvo" class="ws-logo-img">
+                    <span class="ws-logo-text">Corvo Coder</span>
+                </div>
+                <div class="ws-sep"></div>
+                <span class="ws-project" id="wsProject">Projeto</span>
+            </div>
+            <div class="ws-toolbar-center">
+                <div class="ws-tabs" id="wsTabs"></div>
+            </div>
+            <div class="ws-toolbar-right">
+                <button class="ws-btn ws-btn-ghost" id="toggleTerminalBtn" onclick="toggleTerminal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Terminal
+                </button>
+                <button class="ws-btn ws-btn-ghost" id="togglePreviewBtn" onclick="togglePreviewPanel()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    Preview
+                </button>
+                <button class="ws-btn ws-btn-deploy" id="deployBtn" onclick="deployProject()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Deploy
+                </button>
+            </div>
+        </header>
+
+        <div class="ws-body">
+            <aside class="ws-sidebar" id="wsSidebar">
+                <div class="ws-sidebar-header">
+                    <span>EXPLORER</span>
+                    <button class="ws-icon-btn" onclick="toggleFileSidebar()" title="Fechar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <div class="ws-file-tree" id="wsFileTree"></div>
+            </aside>
+
+            <div class="ws-main">
+                <div class="ws-editor-area">
+                    <div class="ws-editor" id="wsEditor">
+                        <div class="ws-editor-empty" id="wsEditorEmpty">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                            <p>Selecione um arquivo para editar</p>
+                        </div>
+                        <div class="ws-code-area" id="wsCodeArea" style="display:none">
+                            <div class="ws-line-numbers" id="wsLineNumbers"></div>
+                            <pre class="ws-code" id="wsCode"><code id="wsCodeContent"></code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ws-preview-area" id="wsPreviewArea">
+                    <div class="ws-preview-header">
+                        <span>Preview</span>
+                        <div class="ws-preview-actions">
+                            <button class="ws-icon-btn" onclick="refreshWsPreview()" title="Atualizar">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            </button>
+                            <button class="ws-icon-btn" onclick="togglePreviewPanel()" title="Fechar">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <iframe id="wsPreviewFrame" class="ws-preview-frame" srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0a0a12;display:flex;align-items:center;justify-content:center;height:100vh;color:#6b7280}.p{text-align:center;padding:20px}.p h2{font-size:1.1rem;margin-bottom:8px;color:#e88e5f}.p .ico{font-size:2.5rem;margin-bottom:12px}p small{font-size:.75rem}</style></head><body><div class='p'><div class='ico'>⚡</div><h2>Preview do app</h2><small>O preview aparece aqui quando a IA gerar código</small></div></body></html>"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="ws-terminal-area" id="wsTerminalArea" style="display:none">
+            <div class="ws-terminal-header">
+                <span>Terminal</span>
+                <div class="ws-terminal-actions">
+                    <button class="ws-icon-btn" onclick="clearWsTerminal()">Limpar</button>
+                    <button class="ws-icon-btn" onclick="toggleTerminal()">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="ws-terminal" id="wsTerminal">
+                <div class="ws-term-line ok">$ Projeto carregado no workspace</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/workspace.js"></script>
+</body>
+</html>

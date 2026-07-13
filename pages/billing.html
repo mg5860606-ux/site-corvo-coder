@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planos - Corvo Coder</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-page" style="align-items:flex-start;padding-top:60px">
+        <div style="width:100%;max-width:900px">
+            <a href="../index.html" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                Voltar
+            </a>
+
+            <h1 class="settings-title" style="text-align:center">Escolha seu plano</h1>
+            <p class="settings-sub" style="text-align:center">Construa apps ilimitados com o plano certo pra você</p>
+
+            <div id="planBanner" style="display:none;text-align:center;padding:12px;border-radius:8px;margin-bottom:20px;font-size:0.85rem"></div>
+
+            <div class="pricing-grid">
+                <div class="price-card" id="card-free">
+                    <div class="price-name">Starter</div>
+                    <div class="price-value">Grátis</div>
+                    <div class="price-desc">Para experimentar</div>
+                    <ul class="price-features">
+                        <li>100 créditos/dia</li>
+                        <li>1 projeto</li>
+                        <li>Deploy básico</li>
+                        <li>Suporte comunidade</li>
+                    </ul>
+                    <button class="price-btn" id="btn-free" onclick="selectPlan('free')">Plano Atual</button>
+                </div>
+
+                <div class="price-card featured" id="card-pro">
+                    <div class="popular-badge">Mais Popular</div>
+                    <div class="price-name">Pro</div>
+                    <div class="price-value">R$49<span>/mês</span></div>
+                    <div class="price-desc">Para desenvolvedores</div>
+                    <ul class="price-features">
+                        <li>Créditos ilimitados</li>
+                        <li>Projetos ilimitados</li>
+                        <li>Deploy custom domain</li>
+                        <li>Suporte prioritário</li>
+                        <li>API access</li>
+                    </ul>
+                    <button class="price-btn" id="btn-pro" onclick="selectPlan('pro')">Assinar Pro</button>
+                </div>
+
+                <div class="price-card" id="card-enterprise">
+                    <div class="price-name">Enterprise</div>
+                    <div class="price-value">R$199<span>/mês</span></div>
+                    <div class="price-desc">Para equipes</div>
+                    <ul class="price-features">
+                        <li>Tudo do Pro</li>
+                        <li>5 membros</li>
+                        <li>SSO & SAML</li>
+                        <li>SLA garantido</li>
+                        <li>Suporte dedicado</li>
+                    </ul>
+                    <button class="price-btn" id="btn-enterprise" onclick="selectPlan('enterprise')">Assinar Enterprise</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API = window.location.origin;
+        const token = localStorage.getItem('cc_token');
+        let currentUser = JSON.parse(localStorage.getItem('cc_user') || '{}');
+
+        async function apiFetch(path, opts = {}) {
+            const res = await fetch(API + path, {
+                ...opts,
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...opts.headers }
+            });
+            return res.json();
+        }
+
+        // Check URL params for success/cancel
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('success') === 'true') {
+            const banner = document.getElementById('planBanner');
+            banner.style.display = 'block';
+            banner.style.background = 'rgba(34,197,94,0.1)';
+            banner.style.color = '#22c55e';
+            banner.textContent = `Plano ${params.get('plan') || 'Pro'} ativado com sucesso! Seus créditos foram atualizados.`;
+            history.replaceState(null, '', 'billing.html');
+            currentUser.plan = params.get('plan') || 'pro';
+            localStorage.setItem('cc_user', JSON.stringify(currentUser));
+        } else if (params.get('cancelled') === 'true') {
+            const banner = document.getElementById('planBanner');
+            banner.style.display = 'block';
+            banner.style.background = 'rgba(239,68,68,0.1)';
+            banner.style.color = '#ef4444';
+            banner.textContent = 'Pagamento cancelado. Você pode tentar novamente quando quiser.';
+            history.replaceState(null, '', 'billing.html');
+        }
+
+        async function loadCurrentPlan() {
+            if (!token) return;
+            try {
+                const data = await apiFetch('/api/auth/me');
+                if (data && data.user) {
+                    currentUser = data.user;
+                    localStorage.setItem('cc_user', JSON.stringify(currentUser));
+                    updateUI();
+                }
+            } catch {}
+        }
+
+        function updateUI() {
+            const plan = currentUser.plan || 'free';
+            document.getElementById('btn-free').textContent = plan === 'free' ? 'Plano Atual' : 'Downgrade';
+            document.getElementById('btn-pro').textContent = plan === 'pro' ? 'Plano Atual' : 'Assinar Pro';
+            document.getElementById('btn-enterprise').textContent = plan === 'enterprise' ? 'Plano Atual' : 'Assinar Enterprise';
+            if (plan !== 'free') {
+                document.getElementById('card-' + plan).style.borderColor = 'var(--accent)';
+            }
+        }
+
+        async function selectPlan(plan) {
+            const currentPlan = currentUser.plan || 'free';
+            if (plan === currentPlan) {
+                if (plan !== 'free') {
+                    // Open Stripe portal to manage
+                    try {
+                        const data = await apiFetch('/api/stripe/portal', { method: 'POST' });
+                        if (data.url) window.location.href = data.url;
+                        else alert('Nenhuma assinatura encontrada.');
+                    } catch { alert('Erro ao abrir portal.'); }
+                } else {
+                    alert('Você já está no plano Free!');
+                }
+                return;
+            }
+
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const data = await apiFetch('/api/stripe/checkout', { method: 'POST', body: JSON.stringify({ plan }) });
+                if (data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert(data.error || 'Erro ao iniciar pagamento. Verifique se a Stripe está configurada.');
+                }
+            } catch {
+                alert('Erro ao conectar com o servidor.');
+            }
+        }
+
+        loadCurrentPlan();
+        updateUI();
+    </script>
+    <a href="#" class="wa-float" id="waFloat" target="_blank" rel="noopener" title="Fale conosco no WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+    <script>
+        fetch('/api/config').then(r=>r.json()).then(d=>{
+            if(d.whatsapp){document.getElementById('waFloat').href='https://wa.me/'+d.whatsapp.replace(/[^0-9]/g,'')}
+            else{document.getElementById('waFloat').style.display='none'}
+        }).catch(()=>{});
+    </script>
+</body>
+</html>

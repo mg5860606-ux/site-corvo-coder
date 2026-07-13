@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corvo Coder — VS Code</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/vscode.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <div class="vscode">
+        <!-- TITLE BAR -->
+        <header class="titlebar">
+            <div class="titlebar-left">
+                <a href="../index.html" class="tb-icon" title="Voltar ao chat">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </a>
+                <div class="tb-logo">
+                    <img src="../logo.jpg" alt="Corvo" class="tb-logo-img">
+                    <span class="tb-logo-text">Corvo Coder</span>
+                </div>
+            </div>
+            <div class="titlebar-center">
+                <div class="tb-tabs" id="tbTabs"></div>
+            </div>
+            <div class="titlebar-right">
+                <button class="tb-btn" onclick="downloadCurrentFile()" title="Baixar arquivo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download
+                </button>
+                <button class="tb-btn tb-btn-green" onclick="downloadAllFiles()" title="Baixar projeto inteiro (ZIP)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Projeto
+                </button>
+                <button class="tb-btn" id="btnSearch" onclick="toggleSearch()" title="Buscar (Ctrl+F)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+                <button class="tb-btn" id="btnTerminal" onclick="toggleTerminal()" title="Terminal (Ctrl+`)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                </button>
+                <button class="tb-btn" id="btnPreview" onclick="togglePreview()" title="Preview">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="vscode-body">
+            <!-- ACTIVITY BAR -->
+            <aside class="activity-bar">
+                <div class="activity-icons">
+                    <button class="activity-btn active" onclick="switchActivity('explorer')" title="Explorer" id="actExplorer">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <button class="activity-btn" onclick="switchActivity('search')" title="Buscar" id="actSearch">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </button>
+                    <button class="activity-btn" onclick="switchActivity('git')" title="Source Control" id="actGit">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+                    </button>
+                    <button class="activity-btn" onclick="switchActivity('run')" title="Run and Debug" id="actRun">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                    <button class="activity-btn" onclick="switchActivity('extensions')" title="Extensões" id="actExtensions">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
+                    </button>
+                </div>
+                <div class="activity-bottom">
+                    <button class="activity-btn" title="Contas">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- SIDEBAR -->
+            <aside class="sidebar hidden" id="sidebar">
+                <!-- EXPLORER -->
+                <div class="sidebar-panel active" id="panelExplorer">
+                    <div class="sidebar-header">
+                        <span>EXPLORER</span>
+                        <div class="sidebar-actions">
+                            <button class="sb-icon" onclick="newFile()" title="Novo Arquivo">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                            </button>
+                            <button class="sb-icon" onclick="newFolder()" title="Nova Pasta">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                            </button>
+                            <button class="sb-icon" onclick="collapseAll()" title="Recolher Tudo">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            </button>
+                            <button class="sb-icon" onclick="refreshTree()" title="Atualizar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="project-header" id="projectHeader">
+                        <span class="project-name-sidebar">CORVO PROJECT</span>
+                    </div>
+                    <div class="sidebar-content" id="fileTree"></div>
+                </div>
+
+                <!-- SEARCH -->
+                <div class="sidebar-panel" id="panelSearch">
+                    <div class="sidebar-header"><span>BUSCAR</span></div>
+                    <div class="sidebar-content">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="Buscar no código..." oninput="searchFiles(this.value)">
+                            <div class="search-options">
+                                <label><input type="checkbox" id="searchCase"> Maiúsculas</label>
+                                <label><input type="checkbox" id="searchRegex"> Regex</label>
+                            </div>
+                        </div>
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                </div>
+
+                <!-- GIT -->
+                <div class="sidebar-panel" id="panelGit">
+                    <div class="sidebar-header"><span>SOURCE CONTROL</span></div>
+                    <div class="sidebar-content" style="padding:16px">
+                        <div class="git-status">
+                            <div class="git-branch">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+                                main
+                            </div>
+                            <div class="git-changes" id="gitChanges">
+                                <div class="git-section-title">Alterações</div>
+                                <div class="git-file" style="color:var(--muted);font-size:0.75rem;padding:8px">Nenhuma alteração</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RUN -->
+                <div class="sidebar-panel" id="panelRun">
+                    <div class="sidebar-header"><span>RASTREAMENTO E DEPURAÇÃO</span></div>
+                    <div class="sidebar-content" style="padding:16px;text-align:center">
+                        <div style="color:var(--muted);font-size:0.8rem;margin-bottom:16px">Sem configuração de execução</div>
+                        <button class="run-btn" onclick="runProject()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            Executar Projeto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- EXTENSIONS -->
+                <div class="sidebar-panel" id="panelExtensions">
+                    <div class="sidebar-header"><span>EXTENSÕES</span></div>
+                    <div class="sidebar-content">
+                        <div class="ext-search">
+                            <input type="text" placeholder="Buscar extensões..." style="width:100%;padding:6px 10px;background:#3c3c3c;border:1px solid transparent;border-radius:4px;color:var(--text);font-size:0.78rem;outline:none;margin:8px">
+                        </div>
+                        <div class="ext-list">
+                            <div class="ext-item installed">
+                                <div class="ext-icon" style="background:#7c5cfc">🐦</div>
+                                <div class="ext-info"><div class="ext-name">Corvo AI</div><div class="ext-desc">Assistente de código</div><div class="ext-version">v1.0.0</div></div>
+                            </div>
+                            <div class="ext-item installed">
+                                <div class="ext-icon" style="background:#e44d26">🌐</div>
+                                <div class="ext-info"><div class="ext-name">HTML CSS Support</div><div class="ext-desc">Intellisense para HTML/CSS</div><div class="ext-version">v1.0.0</div></div>
+                            </div>
+                            <div class="ext-item installed">
+                                <div class="ext-icon" style="background:#f7df1e;color:#000">⚡</div>
+                                <div class="ext-info"><div class="ext-name">JavaScript</div><div class="ext-desc">Suporte a JavaScript</div><div class="ext-version">v1.0.0</div></div>
+                            </div>
+                            <div class="ext-item">
+                                <div class="ext-icon" style="background:#3572A5">🐍</div>
+                                <div class="ext-info"><div class="ext-name">Python</div><div class="ext-desc">Suporte a Python</div><div class="ext-version">v2024.1</div></div>
+                            </div>
+                            <div class="ext-item">
+                                <div class="ext-icon" style="background:#4ec9b0">🦀</div>
+                                <div class="ext-info"><div class="ext-name">Rust</div><div class="ext-desc">Suporte a Rust</div><div class="ext-version">v1.0.0</div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- RESIZE HANDLE -->
+            <div class="resize-handle" id="resizeHandle"></div>
+
+            <!-- EDITOR AREA -->
+            <div class="editor-area">
+                <!-- BREADCRUMB -->
+                <div class="breadcrumb" id="breadcrumb">
+                    <span style="color:var(--muted)">Selecione um arquivo</span>
+                </div>
+
+                <!-- TABS -->
+                <div class="editor-tabs" id="editorTabs"></div>
+
+                <!-- EDITOR -->
+                <div class="editor-container">
+                    <div class="welcome-screen" id="welcomeScreen">
+                        <div class="welcome-content">
+                            <img src="../logo.jpg" alt="Corvo" class="welcome-logo">
+                            <h2>Corvo Coder — VS Code</h2>
+                            <p>Visualize, edite e baixe os arquivos do seu projeto</p>
+                            <div class="welcome-actions">
+                                <button class="welcome-btn" onclick="downloadAllFiles()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    Baixar Projeto (ZIP)
+                                </button>
+                                <button class="welcome-btn" onclick="togglePreview()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                    Abrir Preview
+                                </button>
+                            </div>
+                            <div class="welcome-shortcuts">
+                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>S</kbd> Salvar arquivo</div>
+                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>F</kbd> Buscar no código</div>
+                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>`</kbd> Abrir terminal</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="code-editor" id="codeEditor" style="display:none">
+                        <div class="line-numbers" id="lineNumbers"></div>
+                        <div class="editor-wrapper">
+                            <textarea class="code-textarea" id="codeTextarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off" oninput="onCodeChange()" onkeydown="onEditorKeydown(event)" onscroll="syncScroll()" onclick="updateCursorPos()" onkeyup="updateCursorPos()"></textarea>
+                            <pre class="code-highlight" id="codeHighlight"><code id="codeHighlightContent"></code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM PANELS -->
+                <div class="bottom-panels" id="bottomPanels" style="display:none">
+                    <div class="panel-tabs">
+                        <button class="panel-tab" onclick="switchBottomPanel('terminal')" id="pterminal">TERMINAL</button>
+                        <button class="panel-tab" onclick="switchBottomPanel('output')" id="poutput">OUTPUT</button>
+                        <button class="panel-tab" onclick="switchBottomPanel('problems')" id="pproblems">PROBLEMAS</button>
+                        <button class="panel-tab" onclick="switchBottomPanel('ports')" id="pportas">PORTAS</button>
+                        <div class="panel-tab-spacer"></div>
+                        <button class="panel-tab" onclick="toggleTerminal()" title="Fechar">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="panel-content active" id="terminalPanel">
+                        <div class="terminal-input">
+                            <span class="term-prompt">$</span>
+                            <input type="text" class="term-input" id="termInput" placeholder="Digite um comando..." onkeydown="if(event.key==='Enter')runTerminalCmd()">
+                        </div>
+                        <div class="terminal" id="terminal">
+                            <div class="term-line ok">Bem-vindo ao terminal do Corvo Coder</div>
+                            <div class="term-line muted">Digite comandos para interagir com o projeto</div>
+                        </div>
+                    </div>
+                    <div class="panel-content" id="outputPanel">
+                        <div class="terminal" id="outputLog">
+                            <div class="term-line info">[info] Nenhuma saída ainda</div>
+                        </div>
+                    </div>
+                    <div class="panel-content" id="problemsPanel">
+                        <div class="terminal">
+                            <div class="term-line ok">✓ Nenhum problema encontrado</div>
+                        </div>
+                    </div>
+                    <div class="panel-content" id="portsPanel">
+                        <div class="terminal">
+                            <div class="term-line muted">Nenhuma porta em uso</div>
+                            <div class="term-line muted">Porta 3000 — Servidor principal</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREVIEW PANEL -->
+            <div class="preview-panel" id="previewPanel" style="display:none">
+                <div class="preview-header">
+                    <span>PREVIEW</span>
+                    <div class="preview-actions">
+                        <button class="sb-icon" onclick="refreshPreview()" title="Atualizar">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        </button>
+                        <button class="sb-icon" onclick="openPreviewInNewTab()" title="Abrir em nova aba">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </button>
+                        <button class="sb-icon" onclick="togglePreview()">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <iframe id="previewFrame" class="preview-frame" srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0a0a12;display:flex;align-items:center;justify-content:center;height:100vh;color:#6b7280}.p{text-align:center;padding:20px}.p h2{font-size:1.1rem;margin-bottom:8px;color:#e88e5f}.p .ico{font-size:2.5rem;margin-bottom:12px}p small{font-size:.75rem}</style></head><body><div class='p'><div class='ico'>⚡</div><h2>Preview</h2><small>Clique em Preview para visualizar</small></div></body></html>"></iframe>
+            </div>
+        </div>
+
+        <!-- STATUSBAR -->
+        <footer class="statusbar">
+            <div class="statusbar-left">
+                <span class="sb-item sb-branch">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+                    main
+                </span>
+                <span class="sb-item" id="sbSync">↻ 0  0</span>
+            </div>
+            <div class="statusbar-right">
+                <span class="sb-item" id="sbCursor">Ln 1, Col 1</span>
+                <span class="sb-item" id="sbSpaces">Espaços: 2</span>
+                <span class="sb-item" id="sbEncoding">UTF-8</span>
+                <span class="sb-item" id="sbEol">LF</span>
+                <span class="sb-item" id="sbLanguage" style="cursor:pointer">HTML</span>
+                <span class="sb-item sb-ok">● Corvo Agent</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- CONTEXT MENU -->
+    <div class="context-menu" id="contextMenu" style="display:none">
+        <div class="ctx-item" onclick="ctxNewFile()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            Novo Arquivo
+        </div>
+        <div class="ctx-item" onclick="ctxNewFolder()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Nova Pasta
+        </div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="ctxDownloadFile()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar Arquivo
+        </div>
+        <div class="ctx-item" onclick="ctxDownloadAll()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar Projeto (ZIP)
+        </div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="ctxCopyPath()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar Caminho
+        </div>
+        <div class="ctx-item" onclick="ctxCopyContent()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar Conteúdo
+        </div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item ctx-danger" onclick="ctxDeleteFile()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Excluir
+        </div>
+    </div>
+
+    <script src="../js/vscode.js"></script>
+    <a href="#" class="wa-float" id="waFloat" target="_blank" rel="noopener" title="Fale conosco no WhatsApp" style="position:fixed;bottom:24px;right:24px;z-index:999;width:56px;height:56px;border-radius:50%;background:#25d366;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.4);text-decoration:none">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:28px;height:28px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+    <script>
+        fetch('/api/config').then(r=>r.json()).then(d=>{
+            if(d.whatsapp){document.getElementById('waFloat').href='https://wa.me/'+d.whatsapp.replace(/[^0-9]/g,'')}
+            else{document.getElementById('waFloat').style.display='none'}
+        }).catch(()=>{});
+    </script>
+</body>
+</html>

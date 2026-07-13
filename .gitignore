@@ -1,0 +1,21 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente (NUNCA subir!)
+.env
+
+# Banco de dados
+*.db
+*.db-shm
+*.db-wal
+
+# Chaves de API (estado persistido)
+keys.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c5cfc"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="36" fill="#12121f"/>
+  <rect x="12" y="12" width="168" height="168" rx="30" fill="url(#bg)" opacity="0.15"/>
+  <text x="96" y="124" font-family="system-ui" font-size="80" text-anchor="middle" dominant-baseline="central">🐦</text>
+  <text x="96" y="172" font-family="system-ui" font-size="18" font-weight="bold" fill="#7c5cfc" text-anchor="middle">CORVO</text>
+</svg>

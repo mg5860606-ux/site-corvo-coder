@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Corvo Admin — Painel de Controle</title>
+    <meta name="theme-color" content="#12121f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/public/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/public/service-worker.js')
+                    .then(reg => console.log('📱 PWA Admin: Service Worker registrado', reg.scope))
+                    .catch(err => console.log('📱 PWA Admin: Service Worker falhou', err));
+            });
+        }
+    </script>
+    <style>
+        :root {
+            --bg: #0a0a12; --bg2: #12121f; --bg3: #1a1a2e; --bg-hover: #1e1e35;
+            --border: #1e1e35; --border-light: #2a2a45; --text: #e8e8f0; --muted: #6b7280;
+            --accent: #7c5cfc; --accent-hover: #6a4ee8; --accent-glow: rgba(124,92,252,0.25);
+            --green: #22c55e; --red: #ef4444; --yellow: #eab308; --blue: #3b82f6; --pink: #f472b6;
+            --radius: 8px; --radius-lg: 12px; --transition: 0.2s ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        .admin { display: flex; min-height: 100vh; }
+
+        /* SIDEBAR */
+        .sidebar { width: 240px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 10; }
+        .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .sidebar-logo { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .sidebar-brand { font-weight: 700; font-size: 0.95rem; background: linear-gradient(135deg, var(--accent), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-sub { font-size: 0.65rem; color: var(--muted); }
+
+        .sidebar-nav { flex: 1; padding: 8px; overflow-y: auto; }
+        .nav-section { font-size: 0.65rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 12px 4px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius); cursor: pointer; font-size: 0.8rem; color: var(--muted); transition: var(--transition); }
+        .nav-item:hover { background: var(--bg-hover); color: var(--text); }
+        .nav-item.active { background: rgba(124,92,252,0.12); color: var(--accent); }
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+
+        .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+        .agent-status { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* MAIN */
+        .main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; }
+        .topbar { height: 52px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 5; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-title { font-size: 0.9rem; font-weight: 600; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .topbar-btn { padding: 6px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; border: none; transition: var(--transition); font-family: inherit; display: flex; align-items: center; gap: 6px; }
+        .topbar-btn.primary { background: var(--accent); color: #fff; }
+        .topbar-btn.primary:hover { background: var(--accent-hover); }
+        .topbar-btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+        .topbar-btn.ghost:hover { border-color: var(--accent); color: var(--text); }
+
+        .content { flex: 1; padding: 24px; overflow-y: auto; }
+
+        /* CARDS */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; transition: var(--transition); }
+        .stat-card:hover { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+        .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .stat-label { font-size: 0.75rem; color: var(--muted); }
+        .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; }
+        .stat-change { font-size: 0.7rem; margin-top: 4px; }
+        .stat-change.up { color: var(--green); }
+        .stat-change.down { color: var(--red); }
+
+        /* PANELS */
+        .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .panel-title { font-size: 0.8rem; font-weight: 600; }
+        .panel-body { padding: 12px 16px; max-height: 320px; overflow-y: auto; }
+
+        /* LOGS */
+        .log-entry { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.72rem; align-items: flex-start; }
+        .log-entry:last-child { border: none; }
+        .log-time { color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; font-size: 0.65rem; flex-shrink: 0; }
+        .log-type { padding: 1px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; flex-shrink: 0; }
+        .log-type.info { background: rgba(124,92,252,0.15); color: var(--accent); }
+        .log-type.warn { background: rgba(234,179,8,0.15); color: var(--yellow); }
+        .log-type.error { background: rgba(239,68,68,0.15); color: var(--red); }
+        .log-msg { color: var(--text); flex: 1; }
+
+        /* ALERTS */
+        .alert-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); margin-bottom: 6px; font-size: 0.75rem; }
+        .alert-item.warning { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.2); }
+        .alert-item.critical { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+        .alert-item.info { background: rgba(124,92,252,0.08); border: 1px solid rgba(124,92,252,0.2); }
+        .alert-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .alert-item.warning .alert-dot { background: var(--yellow); }
+        .alert-item.critical .alert-dot { background: var(--red); }
+        .alert-item.info .alert-dot { background: var(--accent); }
+        .alert-text { flex: 1; }
+        .alert-time { font-size: 0.65rem; color: var(--muted); flex-shrink: 0; }
+
+        /* COMMANDS */
+        .cmd-area { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 24px; }
+        .cmd-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+        .cmd-header span { font-size: 0.8rem; font-weight: 600; }
+        .cmd-input-area { display: flex; gap: 8px; padding: 12px 16px; }
+        .cmd-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; outline: none; }
+        .cmd-input:focus { border-color: var(--accent); }
+        .cmd-input::placeholder { color: var(--muted); }
+        .cmd-send { background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 10px 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: var(--transition); font-family: inherit; }
+        .cmd-send:hover { background: var(--accent-hover); }
+        .cmd-output { padding: 12px 16px; border-top: 1px solid var(--border); max-height: 300px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; line-height: 1.6; }
+        .cmd-result { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; white-space: pre-wrap; color: var(--green); font-size: 0.68rem; }
+
+        /* USERS TABLE */
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 14px; text-align: left; font-size: 0.75rem; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.05em; }
+        td { color: var(--text); }
+        tr:hover td { background: var(--bg-hover); }
+        .role-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
+        .role-badge.admin { background: rgba(124,92,252,0.15); color: var(--accent); }
+        .role-badge.user { background: rgba(107,114,128,0.15); color: var(--muted); }
+
+        /* DECISIONS */
+        .decision-item { padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+        .decision-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .decision-action { background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
+        .decision-time { font-size: 0.65rem; color: var(--muted); margin-left: auto; }
+        .decision-reasoning { font-size: 0.75rem; color: var(--muted); }
+
+        /* FULL WIDTH */
+        .full-panel { grid-column: 1 / -1; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .sidebar.mobile-open { display: flex; position: fixed; width: 260px; z-index: 100; height: 100dvh; }
+            .main { margin-left: 0; }
+            .panels { grid-template-columns: 1fr; }
+            .topbar { padding: 10px 12px; gap: 8px; }
+            .topbar h2 { font-size: 0.85rem; }
+            .topbar-btn { padding: 5px 10px; font-size: 0.7rem; }
+        }
+        @media (max-width: 600px) {
+            body { min-height: 100dvh; }
+            .admin { min-height: 100dvh; }
+            .content { padding: 12px; }
+            .panels { gap: 10px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .stat-card { padding: 12px; }
+            .stat-value { font-size: 1.2rem; }
+            .log-entry { flex-direction: column; gap: 4px; padding: 8px; }
+            .log-msg { font-size: 0.7rem; }
+            table { font-size: 0.7rem; }
+            th, td { padding: 6px 4px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">🐦</div>
+                <div>
+                    <div class="sidebar-brand">Corvo Admin</div>
+                    <div class="sidebar-sub">Painel de Controle</div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">Principal</div>
+                <div class="nav-item active" data-section="dashboard" onclick="showSection('dashboard', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </div>
+                <div class="nav-item" data-section="agent" onclick="showSection('agent', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    Agente
+                    <span class="nav-badge" id="agentBadge">ON</span>
+                </div>
+                <div class="nav-section">Gerenciamento</div>
+                <div class="nav-item" data-section="users" onclick="showSection('users', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Usuários
+                </div>
+                <div class="nav-item" data-section="logs" onclick="showSection('logs', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Logs
+                    <span class="nav-badge" id="logBadge">0</span>
+                </div>
+                <div class="nav-item" data-section="alerts" onclick="showSection('alerts', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Alertas
+                    <span class="nav-badge" id="alertBadge">0</span>
+                </div>
+                <div class="nav-section">Sistema</div>
+                <div class="nav-item" data-section="apikeys" onclick="showSection('apikeys', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    API Keys
+                    <span class="nav-badge" id="keysBadge">0</span>
+                </div>
+                <div class="nav-item" data-section="deploy" onclick="showSection('deploy', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    Deploy
+                </div>
+                <div class="nav-item" data-section="decisions" onclick="showSection('decisions', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Decisões
+                </div>
+                <div class="nav-item" data-section="settings" onclick="showSection('settings', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Configurações
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="agent-status">
+                    <div class="status-dot"></div>
+                    <span id="agentStatusText">Agente online</span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="topbar-btn ghost" onclick="document.querySelector('.sidebar').classList.toggle('mobile-open')" style="display:none;padding:6px" id="menuToggle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                    <span class="topbar-title" id="sectionTitle">Dashboard</span>
+                </div>
+                <div class="topbar-right">
+                    <button class="topbar-btn ghost" onclick="runDiagnostics()">🔍 Diagnóstico</button>
+                    <button class="topbar-btn ghost" onclick="runBackup()">💾 Backup</button>
+                    <button class="topbar-btn primary" onclick="runDeploy()">🚀 Deploy</button>
+                </div>
+            </header>
+
+            <div class="content" id="content">
+                <!-- Dashboard Section -->
+                <div id="sec-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Uptime</span>
+                                <div class="stat-icon" style="background:rgba(34,197,94,0.12)">⏱️</div>
+                            </div>
+                            <div class="stat-value" id="statUptime">0h 0m</div>
+                            <div class="stat-change up">Ativo</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Memória</span>
+                                <div class="stat-icon" style="background:rgba(124,92,252,0.12)">💾</div>
+                            </div>
+                            <div class="stat-value" id="statMemory">0 MB</div>
+                            <div class="stat-change" id="statMemChange">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Ações Executadas</span>
+                                <div class="stat-icon" style="background:rgba(59,130,246,0.12)">⚡</div>
+                            </div>
+                            <div class="stat-value" id="statActions">0</div>
+                            <div class="stat-change up">Hoje</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Alertas</span>
+                                <div class="stat-icon" style="background:rgba(234,179,8,0.12)">🔔</div>
+                            </div>
+                            <div class="stat-value" id="statAlerts">0</div>
+                            <div class="stat-change" id="statAlertChange">Ativos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Deploys</span>
+                                <div class="stat-icon" style="background:rgba(34,197,94,0.12)">🚀</div>
+                            </div>
+                            <div class="stat-value" id="statDeploys">0</div>
+                            <div class="stat-change up">Total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Erros</span>
+                                <div class="stat-icon" style="background:rgba(239,68,68,0.12)">❌</div>
+                            </div>
+                            <div class="stat-value" id="statErrors">0</div>
+                            <div class="stat-change" id="statErrorChange">—</div>
+                        </div>
+                    </div>
+
+                    <div class="panels">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Logs Recentes</span>
+                                <button class="topbar-btn ghost" onclick="showSection('logs')" style="padding:4px 10px;font-size:0.7rem">Ver todos</button>
+                            </div>
+                            <div class="panel-body" id="recentLogs"></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Alertas Ativos</span>
+                                <button class="topbar-btn ghost" onclick="showSection('alerts')" style="padding:4px 10px;font-size:0.7rem">Ver todos</button>
+                            </div>
+                            <div class="panel-body" id="recentAlerts"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Section -->
+                <div id="sec-agent" style="display:none">
+                    <div class="cmd-area">
+                        <div class="cmd-header">
+                            <span>🤖 Terminal do Agente</span>
+                        </div>
+                        <div class="cmd-input-area">
+                            <input class="cmd-input" id="cmdInput" placeholder="Digite um comando para o agente... (status, métricas, diagnóstico, deploy, backup...)" onkeydown="if(event.key==='Enter')sendCmd()">
+                            <button class="cmd-send" onclick="sendCmd()">Executar</button>
+                        </div>
+                        <div class="cmd-output" id="cmdOutput">
+                            <div style="color:var(--muted)">🤖 Corvo Agent pronto para comandos...</div>
+                        </div>
+                    </div>
+
+                    <div class="panels">
+                        <div class="panel">
+                            <div class="panel-header"><span class="panel-title">Status do Agente</span></div>
+                            <div class="panel-body" id="agentDetails"></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header"><span class="panel-title">Últimas Ações</span></div>
+                            <div class="panel-body" id="agentActions"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="sec-users" style="display:none">
+                    <div class="panel full-panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Usuários</span>
+                            <button class="topbar-btn primary" style="padding:5px 12px;font-size:0.7rem">+ Novo Usuário</button>
+                        </div>
+                        <div class="panel-body">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Função</th><th>Créditos</th><th>Ações</th></tr></thead>
+                                    <tbody id="usersTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Section -->
+                <div id="sec-logs" style="display:none">
+                    <div class="panel full-panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Logs do Sistema</span>
+                            <button class="topbar-btn ghost" onclick="clearLogs()" style="padding:5px 12px;font-size:0.7rem">Limpar</button>
+                        </div>
+                        <div class="panel-body" id="allLogs" style="max-height:600px"></div>
+                    </div>
+                </div>
+
+                <!-- Alerts Section -->
+                <div id="sec-alerts" style="display:none">
+                    <div class="panel full-panel">
+                        <div class="panel-header"><span class="panel-title">Alertas</span></div>
+                        <div class="panel-body" id="allAlerts" style="max-height:600px"></div>
+                    </div>
+                </div>
+
+                <!-- Deploy Section -->
+                <div id="sec-deploy" style="display:none">
+                    <div class="panel full-panel">
+                        <div class="panel-header"><span class="panel-title">Deploy</span></div>
+                        <div class="panel-body" style="text-align:center;padding:40px">
+                            <div style="font-size:2rem;margin-bottom:16px">🚀</div>
+                            <h3 style="margin-bottom:8px">Deploy do Projeto</h3>
+                            <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px">Clique no botão para fazer deploy do Corvo Coder</p>
+                            <button class="topbar-btn primary" onclick="runDeploy()" style="padding:12px 32px;font-size:0.9rem">🚀 Fazer Deploy</button>
+                            <div id="deployResult" style="margin-top:20px"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decisions Section -->
+                <div id="sec-decisions" style="display:none">
+                    <div class="panel full-panel">
+                        <div class="panel-header"><span class="panel-title">Decisões do Agente</span></div>
+                        <div class="panel-body" id="decisionsList" style="max-height:600px"></div>
+                    </div>
+                </div>
+
+                <!-- API Keys Section -->
+                <div id="sec-apikeys" style="display:none">
+                    <div class="stats-grid" style="margin-bottom:20px">
+                        <div class="stat-card">
+                            <div class="stat-header"><span class="stat-label">Total de Chaves</span><div class="stat-icon" style="background:rgba(124,92,252,0.12)">🔑</div></div>
+                            <div class="stat-value" id="keysTotal">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><span class="stat-label">Ativas</span><div class="stat-icon" style="background:rgba(34,197,94,0.12)">✅</div></div>
+                            <div class="stat-value" id="keysActive">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><span class="stat-label">Total Requests</span><div class="stat-icon" style="background:rgba(59,130,246,0.12)">📊</div></div>
+                            <div class="stat-value" id="keysRequests">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header"><span class="stat-label">Erros</span><div class="stat-icon" style="background:rgba(239,68,68,0.12)">❌</div></div>
+                            <div class="stat-value" id="keysErrors">0</div>
+                        </div>
+                    </div>
+                    <div class="panel full-panel">
+                        <div class="panel-header">
+                            <span class="panel-title">Gerenciar API Keys (Rotação Automática)</span>
+                            <button class="topbar-btn primary" style="padding:5px 12px;font-size:0.7rem" onclick="showAddKeyModal()">+ Nova Chave</button>
+                        </div>
+                        <div class="panel-body">
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead><tr><th>ID</th><th>Nome</th><th>Chave</th><th>Modelo</th><th>Status</th><th>Requests</th><th>Erros</th><th>Último Uso</th><th>Ações</th></tr></thead>
+                                    <tbody id="keysTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="addKeyForm" style="display:none;margin-top:16px">
+                        <div class="panel full-panel">
+                            <div class="panel-header"><span class="panel-title">Adicionar Nova API Key</span></div>
+                            <div class="panel-body">
+                                <div style="display:grid;gap:12px;max-width:500px">
+                                    <input class="cmd-input" id="newKeyName" placeholder="Nome da chave (ex: Key 2)">
+                                    <input class="cmd-input" id="newKeyValue" placeholder="Cole a API Key aqui...">
+                                    <select class="cmd-input" id="newKeyModel" style="cursor:pointer">
+                                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                                        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                                        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                                        <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                                    </select>
+                                    <div style="display:flex;gap:8px">
+                                        <button class="topbar-btn primary" onclick="addNewKey()">Salvar Chave</button>
+                                        <button class="topbar-btn ghost" onclick="document.getElementById('addKeyForm').style.display='none'">Cancelar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="sec-settings" style="display:none">
+                    <div class="panel full-panel">
+                        <div class="panel-header"><span class="panel-title">Configurações do Agente</span></div>
+                        <div class="panel-body">
+                            <div style="display:grid;gap:16px;max-width:500px">
+                                <label style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg3);border-radius:var(--radius)">
+                                    <span style="font-size:0.85rem">Otimização Automática</span>
+                                    <input type="checkbox" id="cfgAutoOptimize" checked onchange="updateSetting('autoOptimize',this.checked)">
+                                </label>
+                                <label style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg3);border-radius:var(--radius)">
+                                    <span style="font-size:0.85rem">Auto-Fix</span>
+                                    <input type="checkbox" id="cfgAutoFix" checked onchange="updateSetting('autoFix',this.checked)">
+                                </label>
+                                <div style="padding:12px;background:var(--bg3);border-radius:var(--radius)">
+                                    <span style="font-size:0.85rem;display:block;margin-bottom:8px">Threshold de Alerta (MB)</span>
+                                    <input type="number" id="cfgThreshold" value="80" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem">
+                                </div>
+                                <button class="topbar-btn primary" onclick="saveSettings()" style="justify-content:center">Salvar Configurações</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '';
+        let currentSection = 'dashboard';
+        let adminPass = localStorage.getItem('corvo_admin_pass') || '';
+
+        // Helper to build auth headers
+        function authHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (adminPass) headers['x-admin-pass'] = adminPass;
+            return headers;
+        }
+
+        function promptAdminPass() {
+            if (!adminPass) {
+                adminPass = prompt('Senha do admin:');
+                if (adminPass) localStorage.setItem('corvo_admin_pass', adminPass);
+            }
+        }
+        promptAdminPass();
+
+        // Fixed showSection - receives the nav element properly
+        function showSection(name, navEl) {
+            document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
+            const section = document.getElementById('sec-' + name);
+            if (section) section.style.display = 'block';
+            
+            // Update sidebar active state
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (navEl) {
+                navEl.classList.add('active');
+            } else {
+                // Fallback: find by data-section attribute
+                const match = document.querySelector('.nav-item[data-section="' + name + '"]');
+                if (match) match.classList.add('active');
+            }
+            
+            document.getElementById('sectionTitle').textContent = {
+                dashboard: 'Dashboard', agent: 'Agente', users: 'Usuários', logs: 'Logs',
+                alerts: 'Alertas', deploy: 'Deploy', decisions: 'Decisões', settings: 'Configurações',
+                apikeys: 'API Keys'
+            }[name] || name;
+            currentSection = name;
+            refresh();
+            if (name === 'apikeys') loadKeys();
+        }
+
+        async function api(path, opts = {}) {
+            try {
+                const res = await fetch(API + path, {
+                    ...opts,
+                    headers: { ...authHeaders(), ...(opts.headers || {}) }
+                });
+                if (res.status === 401) {
+                    adminPass = null;
+                    localStorage.removeItem('corvo_admin_pass');
+                    promptAdminPass();
+                    return null;
+                }
+                return await res.json();
+            } catch (e) { 
+                console.error('API Error:', e);
+                return null; 
+            }
+        }
+
+        async function refresh() {
+            const status = await api('/api/agent/status');
+            const metrics = await api('/api/agent/metrics');
+            const logs = await api('/api/agent/logs?limit=20');
+            const alerts = await api('/api/agent/alerts?limit=20');
+            const users = await api('/api/agent/users');
+            const actions = await api('/api/agent/actions');
+            const decisions = await api('/api/agent/decisions');
+
+            if (status) {
+                document.getElementById('statUptime').textContent = formatUptime(status.uptime);
+                document.getElementById('agentStatusText').textContent = 'Agente ' + (status.status === 'online' ? 'online' : status.status);
+                document.getElementById('agentBadge').textContent = status.status === 'online' ? 'ON' : 'OFF';
+            }
+            if (metrics) {
+                document.getElementById('statMemory').textContent = (metrics.memoryUsage || 0) + ' MB';
+                document.getElementById('statActions').textContent = metrics.requests || actions?.length || 0;
+                document.getElementById('statAlerts').textContent = alerts?.filter(a => !a.resolved)?.length || 0;
+                document.getElementById('statDeploys').textContent = metrics.deploys || 0;
+                document.getElementById('statErrors').textContent = metrics.errors || 0;
+            }
+            if (logs) {
+                document.getElementById('logBadge').textContent = logs.length;
+                document.getElementById('recentLogs').innerHTML = logs.slice(0, 8).map(renderLog).join('');
+                document.getElementById('allLogs').innerHTML = logs.map(renderLog).join('');
+            }
+            if (alerts) {
+                document.getElementById('alertBadge').textContent = alerts.filter(a => !a.resolved).length;
+                document.getElementById('recentAlerts').innerHTML = alerts.slice(0, 5).map(renderAlert).join('');
+                document.getElementById('allAlerts').innerHTML = alerts.map(renderAlert).join('');
+            }
+            if (users) {
+                document.getElementById('usersTable').innerHTML = users.map(u => {
+                    const role = u.role || 'user';
+                    return '<tr><td>' + (u.id || '') + '</td><td>' + (u.name || '') + '</td><td>' + (u.email || '') + '</td><td><span class="role-badge ' + role + '">' + role + '</span></td><td>' + (u.credits || 0) + '</td><td><button class="topbar-btn ghost" style="padding:3px 8px;font-size:0.65rem">Editar</button></td></tr>';
+                }).join('');
+            }
+            if (actions) {
+                document.getElementById('agentActions').innerHTML = actions.slice(0, 10).map(a => '<div class="log-entry"><span class="log-type ' + (a.success ? 'info' : 'error') + '">' + (a.action || '') + '</span><span class="log-msg">' + (a.success ? 'OK' : 'ERRO') + ' — ' + (a.duration || 0) + 'ms</span><span class="log-time">' + (a.timestamp ? new Date(a.timestamp).toLocaleTimeString('pt-BR') : '') + '</span></div>').join('');
+            }
+            if (status) {
+                document.getElementById('agentDetails').innerHTML = '<div style="font-size:0.8rem;line-height:2"><div><strong>Nome:</strong> ' + (status.name || '-') + '</div><div><strong>Função:</strong> ' + (status.role || '-') + '</div><div><strong>Status:</strong> <span style="color:var(--green)">' + (status.status || '-') + '</span></div><div><strong>Memória:</strong> ' + (status.memoryMB || 0) + ' MB</div><div><strong>Ações:</strong> ' + (status.totalActions || 0) + '</div><div><strong>Início:</strong> ' + (status.startTime ? new Date(status.startTime).toLocaleString('pt-BR') : '-') + '</div></div>';
+            }
+            if (decisions && decisions.length) {
+                document.getElementById('decisionsList').innerHTML = decisions.map(d => '<div class="decision-item"><div class="decision-header"><span class="decision-action">' + (d.action || 'none') + '</span><span class="decision-time">' + (d.timestamp ? new Date(d.timestamp).toLocaleString('pt-BR') : '') + '</span></div><div class="decision-reasoning">' + (d.reasoning || 'Sem raciocínio') + '</div></div>').join('');
+            } else if (decisions) {
+                document.getElementById('decisionsList').innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Nenhuma decisão ainda</div>';
+            }
+        }
+
+        function renderLog(l) {
+            return '<div class="log-entry"><span class="log-type ' + (l.type || 'info') + '">' + (l.type || 'info') + '</span><span class="log-msg">' + (l.message || '') + '</span><span class="log-time">' + (l.timestamp ? new Date(l.timestamp).toLocaleTimeString('pt-BR') : '') + '</span></div>';
+        }
+
+        function renderAlert(a) {
+            return '<div class="alert-item ' + (a.severity || 'info') + '"><div class="alert-dot"></div><span class="alert-text">' + (a.message || '') + '</span><span class="alert-time">' + (a.timestamp ? new Date(a.timestamp).toLocaleTimeString('pt-BR') : '') + '</span></div>';
+        }
+
+        function formatUptime(s) { 
+            if (!s) return '0h 0m';
+            const h = Math.floor(s/3600); 
+            const m = Math.floor((s%3600)/60); 
+            return h + 'h ' + m + 'm'; 
+        }
+
+        // Fixed sendCmd - now properly uses api() helper with auth
+        async function sendCmd() {
+            const input = document.getElementById('cmdInput');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            const output = document.getElementById('cmdOutput');
+            output.innerHTML += '<div style="color:var(--accent)">λ ' + escapeHtml(cmd) + '</div>';
+            input.value = '';
+            const data = await api('/api/agent/command', { 
+                method: 'POST', 
+                body: JSON.stringify({command: cmd}) 
+            });
+            output.innerHTML += '<div class="cmd-result">' + escapeHtml(JSON.stringify(data, null, 2)) + '</div>';
+            output.scrollTop = output.scrollHeight;
+            refresh();
+        }
+
+        // Fixed functions - now use api() helper with auth headers
+        async function runDiagnostics() { 
+            const r = await api('/api/agent/action/run_diagnostics'); 
+            alert('Diagnóstico: ' + JSON.stringify(r?.data || r)); 
+            refresh(); 
+        }
+        
+        async function runBackup() { 
+            const r = await api('/api/agent/action/backup'); 
+            alert('Backup: ' + JSON.stringify(r?.data || r)); 
+            refresh(); 
+        }
+        
+        async function runDeploy() { 
+            const r = await api('/api/agent/action/deploy'); 
+            const resultEl = document.getElementById('deployResult');
+            if (resultEl) {
+                resultEl.innerHTML = '<div class="cmd-result">' + escapeHtml(JSON.stringify(r?.data || r, null, 2)) + '</div>';
+            } else {
+                alert('Deploy: ' + JSON.stringify(r?.data || r));
+            }
+            refresh(); 
+        }
+        
+        async function clearLogs() { 
+            await api('/api/agent/action/clear_cache'); 
+            refresh(); 
+        }
+        
+        function updateSetting(key, val) { 
+            api('/api/agent/config', {
+                method:'PUT', 
+                body: JSON.stringify({[key]: val ? true : false})
+            }); 
+        }
+        
+        function saveSettings() { 
+            alert('Configurações salvas!'); 
+        }
+
+        function escapeHtml(t) { 
+            if (typeof t !== 'string') return String(t || '');
+            const d = document.createElement('div'); 
+            d.textContent = t; 
+            return d.innerHTML; 
+        }
+
+        // === API KEYS MANAGEMENT ===
+        async function loadKeys() {
+            const data = await api('/api/keys');
+            if (!data) return;
+            document.getElementById('keysTotal').textContent = data.total || 0;
+            document.getElementById('keysActive').textContent = data.active || 0;
+            document.getElementById('keysBadge').textContent = data.active || 0;
+            
+            const stats = data.totalRequests !== undefined ? data : await api('/api/keys/stats');
+            if (stats) {
+                document.getElementById('keysRequests').textContent = stats.totalRequests || 0;
+                document.getElementById('keysErrors').textContent = stats.totalErrors || 0;
+            }
+            
+            if (data.keys && data.keys.length) {
+                document.getElementById('keysTable').innerHTML = data.keys.map(k => {
+                    const enabled = k.enabled !== false;
+                    return '<tr><td>' + (k.id || '') + '</td><td><strong>' + escapeHtml(k.name || '') + '</strong></td><td style="font-family:\'JetBrains Mono\',monospace;font-size:0.7rem">' + escapeHtml(k.keyPreview || '') + '</td><td>' + escapeHtml(k.model || '') + '</td><td><span class="role-badge ' + (enabled ? 'admin' : 'user') + '">' + (enabled ? 'Ativa' : 'Inativa') + '</span></td><td>' + (k.requests || 0) + '</td><td style="color:' + (k.errors > 0 ? 'var(--red)' : '') + '">' + (k.errors || 0) + (k.lastErrorMsg ? ' ⚠️' : '') + '</td><td style="font-size:0.65rem;color:var(--muted)">' + (k.lastUsed ? new Date(k.lastUsed).toLocaleString('pt-BR') : 'Nunca') + '</td><td><div style="display:flex;gap:4px"><button class="topbar-btn ghost" style="padding:3px 8px;font-size:0.6rem" onclick="toggleKey(' + k.id + ',' + (!enabled) + ')">' + (enabled ? 'Desativar' : 'Ativar') + '</button><button class="topbar-btn ghost" style="padding:3px 8px;font-size:0.6rem" onclick="testKey(' + k.id + ')">Testar</button><button class="topbar-btn ghost" style="padding:3px 8px;font-size:0.6rem;color:var(--red)" onclick="deleteKey(' + k.id + ')">Excluir</button></div></td></tr>';
+                }).join('');
+            } else {
+                document.getElementById('keysTable').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted)">Nenhuma chave configurada</td></tr>';
+            }
+        }
+
+        function showAddKeyModal() { document.getElementById('addKeyForm').style.display = 'block'; }
+
+        async function addNewKey() {
+            const name = document.getElementById('newKeyName').value.trim();
+            const key = document.getElementById('newKeyValue').value.trim();
+            const model = document.getElementById('newKeyModel').value;
+            if (!key) { alert('Cole a API Key'); return; }
+            await api('/api/keys', { method: 'POST', body: JSON.stringify({ name, key, model }) });
+            document.getElementById('newKeyName').value = '';
+            document.getElementById('newKeyValue').value = '';
+            document.getElementById('addKeyForm').style.display = 'none';
+            loadKeys();
+        }
+
+        async function toggleKey(id, enabled) {
+            await api('/api/keys/' + id + '/toggle', { method: 'PUT', body: JSON.stringify({ enabled }) });
+            loadKeys();
+        }
+
+        async function testKey(id) {
+            const data = await api('/api/keys/' + id + '/test', { method: 'POST' });
+            alert((data?.success ? '✅ Chave funcionando! Resposta: ' + (data.response || 'OK') : '❌ Erro: ' + (data?.error || 'Falha')));
+            loadKeys();
+        }
+
+        async function deleteKey(id) {
+            if (!confirm('Excluir esta chave?')) return;
+            await api('/api/keys/' + id, { method: 'DELETE' });
+            loadKeys();
+        }
+
+        // Override refresh to include keys
+        const _origRefresh = refresh;
+        refresh = async function() {
+            await _origRefresh();
+            if (currentSection === 'apikeys') loadKeys();
+        };
+
+        // Auto-init: show dashboard
+        showSection('dashboard', document.querySelector('.nav-item[data-section="dashboard"]'));
+        setInterval(refresh, 15000);
+    </script>
+</body>
+</html>
