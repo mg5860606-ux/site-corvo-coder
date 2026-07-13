@@ -43,6 +43,17 @@ function updateCredits() {
     const fill = document.getElementById('creditsFill');
     const text = document.getElementById('creditsText');
     const side = document.getElementById('sideCredits');
+    
+    if (!user) {
+        if (fill) {
+            fill.style.width = '100%';
+            fill.style.background = 'linear-gradient(90deg,#7c3aed,#a78bfa)';
+        }
+        if (text) text.textContent = 'Convidado (50 cr)';
+        if (side) side.textContent = 'Modo Convidado';
+        return;
+    }
+
     const pct = plan === 'enterprise' ? 100 : Math.max(0, Math.min(100, (credits / max) * 100));
     const label = plan === 'enterprise' ? '∞ créditos' : `${credits}/${max}`;
     if (fill) {
@@ -51,6 +62,71 @@ function updateCredits() {
     }
     if (text) text.textContent = label;
     if (side) side.textContent = plan === 'enterprise' ? 'Créditos ilimitados' : `${credits} crédito${credits !== 1 ? 's' : ''} restante${credits !== 1 ? 's' : ''}`;
+}
+
+function updateUserDropdown() {
+    const pill = document.getElementById('creditsPill');
+    const avBtn = document.getElementById('avatarBtn');
+    const dd = document.getElementById('userDropdown');
+    if (!pill || !avBtn || !dd) return;
+
+    pill.style.display = 'flex';
+    avBtn.style.display = 'flex';
+
+    if (user) {
+        const av = document.getElementById('userInitial');
+        if (av) av.textContent = user.name?.charAt(0)?.toUpperCase() || 'U';
+        dd.innerHTML = `
+            <div class="dropdown-header">
+                <div class="dropdown-name">${user.name || 'Usuário'}</div>
+                <div class="dropdown-email">${user.email || ''}</div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="pages/settings.html" class="dropdown-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Configurações
+            </a>
+            <a href="pages/billing.html" class="dropdown-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Planos
+            </a>
+            <button class="dropdown-item" onclick="exportChatAsTxt()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar Conversa
+            </button>
+            <a href="admin/" class="dropdown-item" target="_blank">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Painel Admin
+            </a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" onclick="logout()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair
+            </button>
+        `;
+    } else {
+        const av = document.getElementById('userInitial');
+        if (av) av.textContent = 'C';
+        dd.innerHTML = `
+            <div class="dropdown-header">
+                <div class="dropdown-name">Convidado</div>
+                <div class="dropdown-email">Faça login para salvar projetos</div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="pages/login.html" class="dropdown-item" style="color:var(--accent);font-weight:600">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Entrar / Login
+            </a>
+            <a href="pages/register.html" class="dropdown-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                Criar Conta
+            </a>
+            <a href="pages/billing.html" class="dropdown-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Planos & Preços
+            </a>
+        `;
+    }
 }
 
 function showCreditCost(cost) {
@@ -1072,23 +1148,10 @@ async function init() {
         }
     }
 
-    if (user) {
-        const av = document.getElementById('userInitial');
-        if (av) av.textContent = user.name?.charAt(0)?.toUpperCase() || 'U';
-        const dd = document.getElementById('dropdownName');
-        if (dd) dd.textContent = user.name || 'Usuário';
-        const de = document.getElementById('dropdownEmail');
-        if (de) de.textContent = user.email || '';
-        document.getElementById('creditsPill').style.display = 'flex';
-        document.getElementById('avatarBtn').style.display = 'flex';
-    } else {
-        // Guest mode — hide user UI, show login prompt
-        document.getElementById('creditsPill').style.display = 'none';
-        document.getElementById('avatarBtn').style.display = 'none';
-        document.getElementById('navActions').style.display = 'flex';
-        const exportBtn = document.querySelector('.nav-action-btn.export');
-        if (exportBtn) exportBtn.style.display = 'none';
-    }
+    updateUserDropdown();
+    document.getElementById('navActions').style.display = 'flex';
+    const exportBtn = document.querySelector('.nav-action-btn.export');
+    if (exportBtn) exportBtn.style.display = 'none';
     updateCredits();
     if (token) {
         await loadChats();
