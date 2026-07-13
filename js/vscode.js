@@ -84,6 +84,14 @@ function loadData() {
         const data = JSON.parse(raw);
         files = data.files || {};
         chatId = data.chatId || null;
+
+        // Update project name in titlebar
+        if (data.project) {
+            const label = document.getElementById('projectNameLabel');
+            if (label) label.textContent = data.project;
+            document.title = data.project + ' — VS Code';
+        }
+
         if (data.preview) {
             document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(data.preview);
         }

@@ -368,7 +368,12 @@ function renderMessages() {
     document.getElementById('navActions').style.display = 'flex';
     const exportBtn = document.querySelector('.nav-action-btn.export');
     if (exportBtn) exportBtn.style.display = chatHistory.length > 0 ? 'flex' : 'none';
-    msgs.scrollTop = msgs.scrollHeight;
+    // Smooth auto-scroll to last message
+    requestAnimationFrame(() => {
+        const lastMsg = msgs.lastElementChild;
+        if (lastMsg) lastMsg.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        else msgs.scrollTop = msgs.scrollHeight;
+    });
 }
 
 // === PROJECT TEMPLATES ===
@@ -730,13 +735,26 @@ function getPreviewHTML() {
 // === WORKSPACE ===
 
 function openWorkspace() {
+    // Generate project name from chat title or last AI message snippet
+    let projectName = 'meu-projeto';
+    if (currentChatId && savedChats) {
+        const chat = savedChats.find(c => c.id === currentChatId);
+        if (chat?.title) {
+            projectName = chat.title
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .substring(0, 30);
+        }
+    }
     localStorage.setItem('cc_workspace', JSON.stringify({
         chatId: currentChatId,
-        project: document.getElementById('projectName')?.textContent || 'Projeto',
+        project: projectName,
         files: currentFiles,
         preview: getPreviewHTML()
-     }));
-     window.location.href = 'pages/vscode.html';
+    }));
+    window.location.href = 'pages/vscode.html';
 }
 
 function deployProject() {
