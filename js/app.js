@@ -145,7 +145,7 @@ async function selectChat(id) {
         }
 
         if (!loadedLocal) {
-            currentFiles = data.files || {};
+            currentFiles = mergeFiles({}, data.files || {});
         }
 
         codeVersions = Object.keys(currentFiles).length ? [JSON.parse(JSON.stringify(currentFiles))] : [];

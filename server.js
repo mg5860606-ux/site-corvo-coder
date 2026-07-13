@@ -2392,7 +2392,8 @@ Converse com ele pelo primeiro nome. Use o nome dele nas respostas quando apropr
         if (chatId) {
             db.addMessage(chatId, 'user', userMessage || (hasMedia ? '[Mídia enviada]' : ''));
             db.addMessage(chatId, 'assistant', msgOnly, { filesJson: JSON.stringify(files), code: reply, type: 'web', source });
-            db.mergeChatFiles(chatId, files);
+            const flatFiles = flattenTree(files);
+            db.mergeChatFiles(chatId, flatFiles);
         }
         return res.json({ reply: msgOnly, files, type: 'web', source, creditsUsed, creditsLeft });
     }
