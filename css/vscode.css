@@ -469,6 +469,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color
     .titlebar-center { overflow-x: auto; margin: 0 2px; }
     .tb-logo-text { display: none; }
     .tb-btn { padding: 4px 6px; font-size: 0.6rem; }
+    .tb-btn span { display: none; }
     .tb-btn .svg { width: 12px; height: 12px; }
     .tb-tab { padding: 4px 6px; font-size: 0.6rem; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
     .editor-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }

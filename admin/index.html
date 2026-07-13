@@ -154,6 +154,7 @@
             .topbar { padding: 10px 12px; gap: 8px; }
             .topbar h2 { font-size: 0.85rem; }
             .topbar-btn { padding: 5px 10px; font-size: 0.7rem; }
+            #menuToggle { display: flex !important; }
         }
         @media (max-width: 600px) {
             body { min-height: 100dvh; }
@@ -641,6 +642,10 @@
             refresh();
             if (name === 'apikeys') loadKeys();
             if (name === 'analytics') loadAnalytics();
+            
+            // Close mobile sidebar if open
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) sidebar.classList.remove('mobile-open');
         }
 
         async function api(path, opts = {}) {
