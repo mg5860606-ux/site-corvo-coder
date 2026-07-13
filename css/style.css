@@ -2073,3 +2073,250 @@ body {
         right: 8px;
     }
 }
+
+/* GUEST PROMO POPUP */
+.guest-promo-popup {
+    position: fixed;
+    bottom: 86px;
+    right: 28px;
+    z-index: 9999;
+    max-width: 330px;
+    animation: promoSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.guest-promo-popup.fade-out {
+    opacity: 0 !important;
+    transform: translateY(30px) scale(0.9) !important;
+    pointer-events: none;
+}
+.guest-promo-close {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #11111f;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 10;
+    transition: var(--transition);
+}
+.guest-promo-close:hover {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+}
+.guest-promo-content {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+/* ANIMAÇÕES DO ROBÔ REALISTA */
+.promo-robot-container {
+    width: 60px;
+    height: 75px;
+    position: relative;
+    perspective: 800px;
+    flex-shrink: 0;
+}
+.promo-robot-body-wrapper {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: robotBreathing 3s ease-in-out infinite;
+}
+.promo-robot-antenna {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: -3px;
+    z-index: 2;
+}
+.promo-robot-antenna-tip {
+    width: 8px;
+    height: 8px;
+    background: #00ffcc;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
+    animation: antennaGlow 1.5s ease-in-out infinite alternate;
+}
+.promo-robot-antenna-shaft {
+    width: 2px;
+    height: 10px;
+    background: #475569;
+}
+.promo-robot-head {
+    width: 44px;
+    height: 34px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: headTilt 6s ease-in-out infinite;
+}
+.promo-robot-ears {
+    position: absolute;
+    width: 50px;
+    display: flex;
+    justify-content: space-between;
+}
+.promo-robot-ears::before,
+.promo-robot-ears::after {
+    content: '';
+    width: 5px;
+    height: 10px;
+    background: #64748b;
+    border-radius: 2px;
+}
+.promo-robot-face {
+    width: 34px;
+    height: 24px;
+    background: #020617;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+.promo-robot-eyes {
+    display: flex;
+    gap: 6px;
+}
+.promo-robot-eye {
+    width: 7px;
+    height: 7px;
+    background: #00ffcc;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #00ffcc;
+    animation: blinkEyes 4s infinite;
+}
+.promo-robot-mouth {
+    width: 14px;
+    height: 2px;
+    background: #00ffcc;
+    border-radius: 1px;
+    opacity: 0.8;
+    box-shadow: 0 0 4px #00ffcc;
+}
+.promo-robot-neck {
+    width: 8px;
+    height: 6px;
+    background: #334155;
+    margin-top: -2px;
+}
+.promo-robot-chest {
+    width: 48px;
+    height: 22px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    border-radius: 10px 10px 6px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.promo-robot-badge {
+    width: 6px;
+    height: 6px;
+    background: var(--pink);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--pink);
+    animation: heartBeat 1.5s infinite alternate;
+}
+
+@keyframes robotBreathing {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+@keyframes antennaGlow {
+    from { filter: brightness(1); box-shadow: 0 0 5px #00ffcc; }
+    to { filter: brightness(1.5); box-shadow: 0 0 15px #00ffcc, 0 0 25px #00ffcc; }
+}
+@keyframes headTilt {
+    0%, 100% { transform: rotate(0deg); }
+    33% { transform: rotate(-2deg) translateY(0.5px); }
+    66% { transform: rotate(3deg) translateY(-0.5px); }
+}
+@keyframes blinkEyes {
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+}
+@keyframes heartBeat {
+    from { opacity: 0.5; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.1); }
+}
+.guest-promo-balloon {
+    background: rgba(13, 13, 23, 0.95);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    border-radius: 16px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 15px rgba(139, 92, 246, 0.05);
+}
+.guest-promo-balloon p {
+    margin-bottom: 6px;
+}
+.guest-promo-balloon p:last-child {
+    margin-bottom: 0;
+}
+.guest-promo-balloon a {
+    color: var(--accent-hover);
+    text-decoration: none;
+    font-weight: 700;
+}
+.guest-promo-balloon a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+.guest-promo-balloon .bonus-msg {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 6px;
+    margin-top: 6px;
+}
+.guest-promo-balloon .balloon-arrow {
+    position: absolute;
+    bottom: 16px;
+    left: -6px;
+    width: 10px;
+    height: 10px;
+    background: rgba(13, 13, 23, 0.95);
+    border-left: 1px solid rgba(139, 92, 246, 0.35);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.35);
+    transform: rotate(45deg);
+}
+@keyframes promoSlideIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes promoFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+@media (max-width: 480px) {
+    .guest-promo-popup {
+        right: 16px;
+        bottom: 80px;
+        max-width: calc(100vw - 32px);
+    }
+}

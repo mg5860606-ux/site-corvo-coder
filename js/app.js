@@ -53,7 +53,17 @@ function updateCredits() {
         }
         if (text) text.textContent = `Convidado (${guestCredits}/10 cr)`;
         if (side) side.textContent = `${guestCredits} crédito(s) restante(s)`;
+        
+        // Gatilho créditos baixos para Convidado (<= 3 créditos restantes)
+        if (guestCredits <= 3 && guestCredits > 0) {
+            showPromoPopup('low_credits');
+        }
         return;
+    }
+
+    // Gatilho créditos baixos para Usuário Logado (<= 5 créditos restantes)
+    if (credits <= 5 && credits > 0 && plan !== 'enterprise') {
+        showPromoPopup('low_credits');
     }
 
     const pct = plan === 'enterprise' ? 100 : Math.max(0, Math.min(100, (credits / max) * 100));
@@ -186,32 +196,13 @@ async function loadChats() {
 }
 
 async function newChat() {
-    const welcomeContent = user 
-        ? `Fala, **${user.name || 'dev'}**! 👋 Sou o **Corvo Coder** 🐦.
-
-Você está logado e pronto para construir aplicações completas! Seu saldo de **50 créditos** está ativo no topo.
-
-**O que vamos criar hoje?** 🚀`
-        : `Fala! 👋 Sou o **Corvo Coder** 🐦.
-
-Você está no **Modo Convidado** com **10 créditos gratuitos** para experimentar.
-
-🎁 **Bônus:** [Crie uma conta gratuita](pages/register.html) ou [faça login](pages/login.html) para ganhar **50 créditos iniciais** e poder salvar todos os seus projetos!
-
-**O que você quer construir hoje?** 🚀`;
-
-    chatHistory = [{
-        id: 'welcome',
-        role: 'assistant',
-        content: welcomeContent,
-        time: formatTime(new Date())
-    }];
+    chatHistory = [];
     currentChatId = null;
     codeVersions = [];
     currentVersionIndex = -1;
     currentFiles = {};
     document.getElementById('messages').innerHTML = '';
-    document.getElementById('welcomeScreen').style.display = 'none'; // ocultado pois a mensagem de boas-vindas substitui
+    document.getElementById('welcomeScreen').style.display = 'flex';
     document.getElementById('navActions').style.display = 'flex';
     const exportBtn = document.querySelector('.nav-action-btn.export');
     if (exportBtn) exportBtn.style.display = 'none';
@@ -825,6 +816,9 @@ async function send() {
 
     if (!text && !hasImages && !hasAudio) return;
 
+    // Remove the guest promo popup immediately when a message is sent
+    closeGuestPromo();
+
 
 
     // Build user content for display
@@ -1231,6 +1225,7 @@ async function init() {
         if (!localStorage.getItem('cc_guest_credits')) {
             localStorage.setItem('cc_guest_credits', '10');
         }
+        showPromoPopup('login');
     }
 
     updateUserDropdown();
@@ -1254,26 +1249,7 @@ async function init() {
     }
 
     if (chatHistory.length === 0) {
-        const welcomeContent = user 
-            ? `Fala, **${user.name || 'dev'}**! 👋 Sou o **Corvo Coder** 🐦.
-
-Você está logado e pronto para construir aplicações completas! Seu saldo de **50 créditos** está ativo no topo.
-
-**O que vamos criar hoje?** 🚀`
-            : `Fala! 👋 Sou o **Corvo Coder** 🐦.
-
-Você está no **Modo Convidado** com **10 créditos gratuitos** para experimentar.
-
-🎁 **Bônus:** [Crie uma conta gratuita](pages/register.html) ou [faça login](pages/login.html) para ganhar **50 créditos iniciais** e poder salvar todos os seus projetos!
-
-**O que você quer construir hoje?** 🚀`;
-
-        chatHistory = [{
-            id: 'welcome',
-            role: 'assistant',
-            content: welcomeContent,
-            time: formatTime(new Date())
-        }];
+        chatHistory = [];
     }
 
     renderMessages();
@@ -1303,5 +1279,56 @@ async function logout() {
     localStorage.removeItem('cc_credits');
     window.location.href = 'pages/login.html';
 }
+
+function closeGuestPromo() {
+    const promo = document.getElementById('guestPromoPopup');
+    if (promo && !promo.classList.contains('fade-out')) {
+        promo.classList.add('fade-out');
+        setTimeout(() => {
+            promo.style.display = 'none';
+        }, 500);
+    }
+}
+
+let _promoTimeout = null;
+function showPromoPopup(type) {
+    const promo = document.getElementById('guestPromoPopup');
+    const balloon = document.getElementById('guestPromoBalloon');
+    if (!promo || !balloon) return;
+
+    // Reset fade-out classes if showing again
+    promo.classList.remove('fade-out');
+    promo.style.display = 'block';
+
+    clearTimeout(_promoTimeout);
+
+    if (type === 'login') {
+        balloon.innerHTML = `
+            <p>Fala! 👋 Sou o <strong>Corvo Coder</strong> 🐦.</p>
+            <p>Você está no <strong>Modo Convidado</strong> com <strong>10 créditos gratuitos</strong> para experimentar.</p>
+            <p class="bonus-msg">🎁 <strong>Bônus:</strong> <a href="pages/register.html">Crie uma conta gratuita</a> ou <a href="pages/login.html">faça login</a> para ganhar <strong>50 créditos iniciais</strong> e poder salvar todos os seus projetos!</p>
+            <p class="final-msg">O que você quer construir hoje? 🚀</p>
+            <div class="balloon-arrow"></div>
+        `;
+        // Some após 15 segundos para visitante inicial
+        _promoTimeout = setTimeout(closeGuestPromo, 15000);
+    } else if (type === 'low_credits') {
+        const guestCredits = !user ? parseInt(localStorage.getItem('cc_guest_credits') || '10') : credits;
+        const upgradeLink = user ? 'pages/billing.html' : 'pages/register.html';
+        const buttonText = user ? 'Fazer Upgrade' : 'Criar Conta (Ganhar 50 cr)';
+        
+        balloon.innerHTML = `
+            <p>Epa! ⚡ Seus créditos estão acabando!</p>
+            <p>Seu saldo atual é de apenas <strong>${guestCredits} crédito(s)</strong>.</p>
+            <p class="bonus-msg">💡 <strong>Dica:</strong> <a href="${upgradeLink}">${buttonText}</a> para continuar desenvolvendo seus sites sem interrupções!</p>
+            <div class="balloon-arrow"></div>
+        `;
+        // Some após 8 segundos para aviso de créditos baixos
+        _promoTimeout = setTimeout(closeGuestPromo, 8000);
+    }
+}
+
+window.closeGuestPromo = closeGuestPromo;
+window.showPromoPopup = showPromoPopup;
 
 init();
