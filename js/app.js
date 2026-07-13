@@ -129,7 +129,7 @@ function updateUserDropdown() {
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                 Entrar / Login
             </a>
-            <a href="pages/register.html" class="dropdown-item">
+            <a href="pages/signup.html" class="dropdown-item">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                 Criar Conta
             </a>
@@ -1306,7 +1306,7 @@ function showPromoPopup(type) {
         balloon.innerHTML = `
             <p>Fala! 👋 Sou o <strong>Corvo Coder</strong> 🐦.</p>
             <p>Você está no <strong>Modo Convidado</strong> com <strong>10 créditos gratuitos</strong> para experimentar.</p>
-            <p class="bonus-msg">🎁 <strong>Bônus:</strong> <a href="pages/register.html">Crie uma conta gratuita</a> ou <a href="pages/login.html">faça login</a> para ganhar <strong>50 créditos iniciais</strong> e poder salvar todos os seus projetos!</p>
+            <p class="bonus-msg">🎁 <strong>Bônus:</strong> <a href="pages/signup.html">Crie uma conta gratuita</a> ou <a href="pages/login.html">faça login</a> para ganhar <strong>50 créditos iniciais</strong> e poder salvar todos os seus projetos!</p>
             <p class="final-msg">O que você quer construir hoje? 🚀</p>
             <div class="balloon-arrow"></div>
         `;
@@ -1314,7 +1314,7 @@ function showPromoPopup(type) {
         _promoTimeout = setTimeout(closeGuestPromo, 15000);
     } else if (type === 'low_credits') {
         const guestCredits = !user ? parseInt(localStorage.getItem('cc_guest_credits') || '10') : credits;
-        const upgradeLink = user ? 'pages/billing.html' : 'pages/register.html';
+        const upgradeLink = user ? 'pages/billing.html' : 'pages/signup.html';
         const buttonText = user ? 'Fazer Upgrade' : 'Criar Conta (Ganhar 50 cr)';
         
         balloon.innerHTML = `
