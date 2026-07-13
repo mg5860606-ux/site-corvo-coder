@@ -115,7 +115,9 @@ async function newChat() {
     currentFiles = {};
     document.getElementById('messages').innerHTML = '';
     document.getElementById('welcomeScreen').style.display = 'flex';
-    document.getElementById('navActions').style.display = 'none';
+    document.getElementById('navActions').style.display = 'flex';
+    const exportBtn = document.querySelector('.nav-action-btn.export');
+    if (exportBtn) exportBtn.style.display = 'none';
     toggleSidebar();
 }
 
@@ -265,7 +267,9 @@ function renderMessages() {
             </div>`;
         msgs.appendChild(div);
     });
-    document.getElementById('navActions').style.display = hasCode ? 'flex' : 'none';
+    document.getElementById('navActions').style.display = 'flex';
+    const exportBtn = document.querySelector('.nav-action-btn.export');
+    if (exportBtn) exportBtn.style.display = chatHistory.length > 0 ? 'flex' : 'none';
     msgs.scrollTop = msgs.scrollHeight;
 }
 
@@ -1081,7 +1085,9 @@ async function init() {
         // Guest mode — hide user UI, show login prompt
         document.getElementById('creditsPill').style.display = 'none';
         document.getElementById('avatarBtn').style.display = 'none';
-        document.getElementById('navActions').style.display = 'none';
+        document.getElementById('navActions').style.display = 'flex';
+        const exportBtn = document.querySelector('.nav-action-btn.export');
+        if (exportBtn) exportBtn.style.display = 'none';
     }
     updateCredits();
     if (token) {
