@@ -404,5 +404,3 @@ Este projeto está licenciado sob a licença **MIT**. Veja o arquivo [LICENSE](L
 Feito com ❤️ e ☕ pelo time **Corvo Coder**
 
 </div>
-#   s i t e - c o r v o - c o d e r  
- 
