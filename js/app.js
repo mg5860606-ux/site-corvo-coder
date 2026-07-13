@@ -35,13 +35,40 @@ async function apiFetch(path, opts = {}) {
     return res.json();
 }
 
+const PLAN_MAX = { free: 50, pro: 500, enterprise: Infinity };
+
 function updateCredits() {
+    const plan = user?.plan || 'free';
+    const max = PLAN_MAX[plan] || 50;
     const fill = document.getElementById('creditsFill');
     const text = document.getElementById('creditsText');
     const side = document.getElementById('sideCredits');
-    if (fill) fill.style.width = `${(credits / 100) * 100}%`;
-    if (text) text.textContent = `${credits} crédito${credits !== 1 ? 's' : ''}`;
-    if (side) side.textContent = `${credits} crédito${credits !== 1 ? 's' : ''} restante${credits !== 1 ? 's' : ''}`;
+    const pct = plan === 'enterprise' ? 100 : Math.max(0, Math.min(100, (credits / max) * 100));
+    const label = plan === 'enterprise' ? '∞ créditos' : `${credits}/${max}`;
+    if (fill) {
+        fill.style.width = pct + '%';
+        fill.style.background = pct < 15 ? 'linear-gradient(90deg,#ef4444,#f97316)' : 'linear-gradient(90deg,#7c3aed,#a78bfa)';
+    }
+    if (text) text.textContent = label;
+    if (side) side.textContent = plan === 'enterprise' ? 'Créditos ilimitados' : `${credits} crédito${credits !== 1 ? 's' : ''} restante${credits !== 1 ? 's' : ''}`;
+}
+
+function showCreditCost(cost) {
+    if (!cost || cost <= 0) return;
+    const pill = document.getElementById('creditsPill');
+    if (!pill) return;
+    const badge = document.createElement('span');
+    badge.textContent = `−${cost}`;
+    badge.style.cssText = 'position:absolute;top:-8px;right:-8px;background:rgba(167,139,250,0.9);color:#fff;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:10px;animation:creditPop 2s forwards;pointer-events:none;z-index:999';
+    if (!document.getElementById('creditPopStyle')) {
+        const s = document.createElement('style');
+        s.id = 'creditPopStyle';
+        s.textContent = '@keyframes creditPop{0%{opacity:0;transform:translateY(4px)}15%{opacity:1;transform:translateY(-4px)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}';
+        document.head.appendChild(s);
+    }
+    pill.style.position = 'relative';
+    pill.appendChild(badge);
+    setTimeout(() => badge.remove(), 2100);
 }
 
 async function syncCredits() {
@@ -50,6 +77,7 @@ async function syncCredits() {
         if (data) { credits = data.credits; updateCredits(); }
     } catch {}
 }
+
 
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -746,7 +774,25 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
         }
 
         const data = await res.json();
+
+        if (res.status === 402) {
+            const thinkEl = document.getElementById(thinkId);
+            if (thinkEl) thinkEl.remove();
+            chatHistory.push({ id: 'e-' + Date.now(), role: 'assistant', content: '⚡ Seus créditos acabaram. Faça upgrade do seu plano para continuar.' });
+            renderMessages();
+            return;
+        }
+
         const reply = data.reply || 'Desculpe, erro ao processar.';
+
+        // Atualiza créditos em tempo real sem nova requisição ao servidor
+        if (typeof data.creditsLeft === 'number') {
+            credits = data.creditsLeft;
+            updateCredits();
+        }
+        if (data.creditsUsed > 0 && user) {
+            showCreditCost(data.creditsUsed);
+        }
 
         let files = data.files || null;
         const hasFiles = files && Object.keys(files).length > 0;
@@ -766,10 +812,6 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
             time: formatTime(new Date())
         };
         chatHistory.push(aiMsg);
-
-        if (hasFiles) {
-            syncCredits();
-        }
 
         const thinkEl = document.getElementById(thinkId);
         if (thinkEl) {

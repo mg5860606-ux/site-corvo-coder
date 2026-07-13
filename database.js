@@ -15,7 +15,7 @@ db.exec(`
         email TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         salt TEXT NOT NULL,
-        credits INTEGER DEFAULT 100,
+        credits INTEGER DEFAULT 50,
         created_at TEXT DEFAULT (datetime('now')),
         updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -175,6 +175,27 @@ module.exports = {
             return true;
         }
         return false;
+    },
+
+    // Deduz créditos baseado em tokens reais consumidos (como Lovable/Emergent)
+    // Free: 50 créditos no cadastro — cada mensagem simples = 1, projeto = 3, projeto complexo = 5
+    // 1 crédito = ~500 tokens output (mais agressivo, incentiva upgrade)
+    useCreditsForTokens(userId, outputTokens, hasFiles) {
+        const user = db.prepare('SELECT credits FROM users WHERE id = ?').get(userId);
+        if (!user) return { ok: false, cost: 0 };
+
+        // 1 crédito a cada 500 tokens de saída
+        let cost = Math.max(1, Math.ceil(outputTokens / 500));
+        if (hasFiles) cost = Math.max(cost, 3);  // projeto gerado = mínimo 3
+        cost = Math.min(cost, 15);               // máximo 15 por resposta
+
+        if (user.credits < cost) {
+            return { ok: false, cost, credits: user.credits };
+        }
+
+        db.prepare('UPDATE users SET credits = credits - ?, updated_at = datetime("now") WHERE id = ?').run(cost, userId);
+        const updated = db.prepare('SELECT credits FROM users WHERE id = ?').get(userId);
+        return { ok: true, cost, credits: updated ? updated.credits : 0 };
     },
 
     // === CHATS ===

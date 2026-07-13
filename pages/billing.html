@@ -1,161 +1,292 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planos - Corvo Coder</title>
+    <title>Planos & Creditos — Corvo Coder</title>
     <link rel="stylesheet" href="../css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{background:#0d0d10;color:#e8e8f0;font-family:Inter,sans-serif;min-height:100vh}
+        .billing-page{max-width:1060px;margin:0 auto;padding:56px 24px 80px}
+        .back-link{display:inline-flex;align-items:center;gap:6px;color:#888;font-size:.85rem;text-decoration:none;margin-bottom:40px;transition:color .2s}
+        .back-link:hover{color:#e8e8f0}
+        .page-header{text-align:center;margin-bottom:14px}
+        .page-header h1{font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px}
+        .page-header p{color:#888;font-size:.95rem;max-width:460px;margin:0 auto}
+        .vs-banner{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.18);border-radius:12px;padding:16px 24px;margin:28px 0;text-align:center;font-size:.82rem;color:#a78bfa;font-weight:600}
+        .vs-banner span{color:#888;font-weight:400}
+        .credits-explainer{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-bottom:36px}
+        .credit-stat{background:#16161e;border:1px solid #2a2a38;border-radius:14px;padding:18px 24px;text-align:center;min-width:130px}
+        .credit-stat .num{font-size:1.8rem;font-weight:800;color:#a78bfa}
+        .credit-stat .lbl{font-size:.75rem;color:#888;margin-top:4px;line-height:1.4}
+        .banner{padding:14px 20px;border-radius:10px;margin-bottom:28px;font-size:.88rem;text-align:center;display:none;border:1px solid}
+        .plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:48px}
+        @media(max-width:760px){.plans-grid{grid-template-columns:1fr}}
+        .plan-card{background:#16161e;border:1.5px solid #2a2a38;border-radius:20px;padding:30px;position:relative;transition:border-color .3s,transform .2s}
+        .plan-card:hover{transform:translateY(-2px)}
+        .plan-card.featured{border-color:#7c3aed;background:linear-gradient(155deg,#1a1428,#16161e)}
+        .popular-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#7c3aed,#a78bfa);color:#fff;font-size:.68rem;font-weight:700;padding:4px 14px;border-radius:20px;letter-spacing:.5px;white-space:nowrap}
+        .plan-name{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#777;margin-bottom:10px}
+        .plan-price-row{display:flex;align-items:baseline;gap:2px;margin-bottom:4px}
+        .plan-amount{font-size:2.4rem;font-weight:800;color:#e8e8f0}
+        .plan-period{font-size:.85rem;color:#666}
+        .plan-compare{font-size:.73rem;color:#555;margin-bottom:6px;text-decoration:line-through}
+        .plan-credits-badge{display:inline-block;background:rgba(167,139,250,.12);color:#a78bfa;font-size:.78rem;font-weight:700;padding:5px 12px;border-radius:7px;margin:10px 0 16px}
+        .plan-desc{font-size:.82rem;color:#777;margin-bottom:22px;line-height:1.5}
+        .plan-features{list-style:none;margin-bottom:26px}
+        .plan-features li{font-size:.83rem;color:#aaa;padding:7px 0;border-bottom:1px solid #1e1e28;display:flex;align-items:center;gap:10px}
+        .plan-features li:last-child{border-bottom:none}
+        .plan-features li::before{content:"✓";color:#22c55e;font-weight:700;flex-shrink:0}
+        .plan-features li.no{color:#555}
+        .plan-features li.no::before{content:"✕";color:#444}
+        .plan-btn{width:100%;padding:13px;border-radius:10px;font-size:.88rem;font-weight:600;border:none;cursor:pointer;transition:all .2s}
+        .plan-btn.primary{background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff}
+        .plan-btn.primary:hover{opacity:.9;transform:translateY(-1px)}
+        .plan-btn.outline{background:transparent;border:1.5px solid #2a2a38;color:#888}
+        .plan-btn.outline:hover{border-color:#7c3aed;color:#a78bfa}
+        .plan-btn.current{background:rgba(34,197,94,.1);border:1.5px solid rgba(34,197,94,.3);color:#22c55e;cursor:default}
+        .usage-meter{background:#16161e;border:1px solid #2a2a38;border-radius:14px;padding:24px 28px;margin-bottom:32px}
+        .usage-meter h3{font-size:.88rem;font-weight:600;color:#ccc;margin-bottom:14px}
+        .usage-row{display:flex;justify-content:space-between;margin-bottom:8px}
+        .usage-bar-wrap{background:#0d0d10;border-radius:6px;height:8px;overflow:hidden}
+        .usage-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .8s}
+        .usage-bar-fill.danger{background:linear-gradient(90deg,#ef4444,#f97316)}
+        .faq{margin-top:8px}
+        .faq h2{font-size:1rem;font-weight:700;margin-bottom:16px;color:#ccc}
+        .faq-item{border:1px solid #1e1e28;border-radius:10px;margin-bottom:8px;overflow:hidden}
+        .faq-q{padding:14px 18px;font-size:.83rem;color:#ccc;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+        .faq-q:hover{background:#1a1a24}
+        .faq-a{padding:0 18px;max-height:0;overflow:hidden;font-size:.8rem;color:#888;line-height:1.6;transition:max-height .3s,padding .3s}
+        .faq-item.open .faq-a{max-height:200px;padding:0 18px 14px}
+        .faq-arrow{transition:transform .3s}
+        .faq-item.open .faq-arrow{transform:rotate(180deg)}
+    </style>
 </head>
 <body>
-    <div class="auth-page" style="align-items:flex-start;padding-top:60px">
-        <div style="width:100%;max-width:900px">
-            <a href="../index.html" class="back-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                Voltar
-            </a>
+<div class="billing-page">
+    <a href="../index.html" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar ao chat
+    </a>
 
-            <h1 class="settings-title" style="text-align:center">Escolha seu plano</h1>
-            <p class="settings-sub" style="text-align:center">Construa apps ilimitados com o plano certo pra você</p>
+    <div class="page-header">
+        <h1>Créditos & Planos</h1>
+        <p>A mesma tecnologia dos grandes, pelo preço que faz sentido de verdade.</p>
+    </div>
 
-            <div id="planBanner" style="display:none;text-align:center;padding:12px;border-radius:8px;margin-bottom:20px;font-size:0.85rem"></div>
+    <div class="vs-banner">
+        🔥 Lovable cobra R$79/mês &nbsp;·&nbsp; Bolt cobra R$89/mês &nbsp;·&nbsp; Nós cobramos <strong style="color:#a78bfa"> R$29/mês </strong> — menos da metade. <span>Mesma IA, mais barato.</span>
+    </div>
 
-            <div class="pricing-grid">
-                <div class="price-card" id="card-free">
-                    <div class="price-name">Starter</div>
-                    <div class="price-value">Grátis</div>
-                    <div class="price-desc">Para experimentar</div>
-                    <ul class="price-features">
-                        <li>100 créditos/dia</li>
-                        <li>1 projeto</li>
-                        <li>Deploy básico</li>
-                        <li>Suporte comunidade</li>
-                    </ul>
-                    <button class="price-btn" id="btn-free" onclick="selectPlan('free')">Plano Atual</button>
-                </div>
+    <div class="credits-explainer">
+        <div class="credit-stat"><div class="num">1</div><div class="lbl">crédito por mensagem simples</div></div>
+        <div class="credit-stat"><div class="num">3–5</div><div class="lbl">créditos por projeto gerado</div></div>
+        <div class="credit-stat"><div class="num">8–15</div><div class="lbl">créditos por app complexo</div></div>
+        <div class="credit-stat"><div class="num">∞</div><div class="lbl">créditos no Enterprise</div></div>
+    </div>
 
-                <div class="price-card featured" id="card-pro">
-                    <div class="popular-badge">Mais Popular</div>
-                    <div class="price-name">Pro</div>
-                    <div class="price-value">R$49<span>/mês</span></div>
-                    <div class="price-desc">Para desenvolvedores</div>
-                    <ul class="price-features">
-                        <li>Créditos ilimitados</li>
-                        <li>Projetos ilimitados</li>
-                        <li>Deploy custom domain</li>
-                        <li>Suporte prioritário</li>
-                        <li>API access</li>
-                    </ul>
-                    <button class="price-btn" id="btn-pro" onclick="selectPlan('pro')">Assinar Pro</button>
-                </div>
+    <div class="banner" id="planBanner"></div>
 
-                <div class="price-card" id="card-enterprise">
-                    <div class="price-name">Enterprise</div>
-                    <div class="price-value">R$199<span>/mês</span></div>
-                    <div class="price-desc">Para equipes</div>
-                    <ul class="price-features">
-                        <li>Tudo do Pro</li>
-                        <li>5 membros</li>
-                        <li>SSO & SAML</li>
-                        <li>SLA garantido</li>
-                        <li>Suporte dedicado</li>
-                    </ul>
-                    <button class="price-btn" id="btn-enterprise" onclick="selectPlan('enterprise')">Assinar Enterprise</button>
-                </div>
-            </div>
+    <div class="usage-meter" id="usageMeter" style="display:none">
+        <h3>⚡ Seus créditos</h3>
+        <div class="usage-row">
+            <span style="font-size:.82rem;color:#888">Disponíveis</span>
+            <span style="font-size:.85rem;font-weight:600;color:#e8e8f0" id="creditsRemaining">—</span>
+        </div>
+        <div class="usage-bar-wrap"><div class="usage-bar-fill" id="usageBarFill" style="width:100%"></div></div>
+        <div style="margin-top:8px;font-size:.73rem;color:#555" id="usageHint"></div>
+    </div>
+
+    <div class="plans-grid">
+        <!-- FREE -->
+        <div class="plan-card" id="card-free">
+            <div class="plan-name">Starter</div>
+            <div class="plan-price-row"><span class="plan-amount">R$0</span><span class="plan-period">/mês</span></div>
+            <div class="plan-credits-badge">50 créditos</div>
+            <div class="plan-desc">Para experimentar e criar seus primeiros projetos sem pagar nada.</div>
+            <ul class="plan-features">
+                <li>50 créditos no cadastro</li>
+                <li>~10 projetos simples</li>
+                <li>Editor de código VS Code</li>
+                <li>Download do projeto (ZIP)</li>
+                <li>Preview ao vivo</li>
+                <li class="no">Créditos renovados mensalmente</li>
+                <li class="no">Histórico ilimitado</li>
+            </ul>
+            <button class="plan-btn outline" id="btn-free" onclick="selectPlan('free')">Plano Atual</button>
+        </div>
+
+        <!-- PRO -->
+        <div class="plan-card featured" id="card-pro">
+            <div class="popular-badge">Mais Popular</div>
+            <div class="plan-name">Pro</div>
+            <div class="plan-price-row"><span class="plan-amount">R$29</span><span class="plan-period">/mês</span></div>
+            <div class="plan-compare">Concorrentes cobram R$79–R$89/mês</div>
+            <div class="plan-credits-badge">500 créditos/mês</div>
+            <div class="plan-desc">Para devs que constroem frequentemente. Créditos renovam todo mês.</div>
+            <ul class="plan-features">
+                <li>500 créditos renovados/mês</li>
+                <li>~100 projetos completos/mês</li>
+                <li>Histórico ilimitado de chats</li>
+                <li>Editor VS Code completo</li>
+                <li>Deploy com 1 clique</li>
+                <li>Suporte prioritário</li>
+                <li>Acesso antecipado a novas features</li>
+            </ul>
+            <button class="plan-btn primary" id="btn-pro" onclick="selectPlan('pro')">Assinar Pro — R$29/mês</button>
+        </div>
+
+        <!-- ENTERPRISE -->
+        <div class="plan-card" id="card-enterprise">
+            <div class="plan-name">Enterprise</div>
+            <div class="plan-price-row"><span class="plan-amount">R$99</span><span class="plan-period">/mês</span></div>
+            <div class="plan-compare">Concorrentes cobram R$350+/mês</div>
+            <div class="plan-credits-badge">Créditos ilimitados</div>
+            <div class="plan-desc">Para equipes. Sem limites, sem surpresas na fatura.</div>
+            <ul class="plan-features">
+                <li>Créditos ilimitados</li>
+                <li>Até 5 membros na equipe</li>
+                <li>Tudo do Pro</li>
+                <li>SLA 99.9% garantido</li>
+                <li>Suporte dedicado</li>
+                <li>Integração via API</li>
+                <li>Onboarding personalizado</li>
+            </ul>
+            <button class="plan-btn outline" id="btn-enterprise" onclick="selectPlan('enterprise')">Assinar Enterprise — R$99/mês</button>
         </div>
     </div>
-    <script>
-        const API = window.location.origin;
-        const token = localStorage.getItem('cc_token');
-        let currentUser = JSON.parse(localStorage.getItem('cc_user') || '{}');
 
-        async function apiFetch(path, opts = {}) {
-            const res = await fetch(API + path, {
-                ...opts,
-                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...opts.headers }
-            });
-            return res.json();
+    <div class="faq">
+        <h2>Perguntas frequentes</h2>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">O que é um crédito?<svg class="faq-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="faq-a">Créditos representam o volume de processamento da IA. Mensagens simples = 1 crédito. Projetos completos (HTML + CSS + JS) = 3–5 créditos. Apps complexos (full-stack + banco) = até 15 créditos.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">Os créditos do Free expiram?<svg class="faq-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="faq-a">Os 50 créditos do cadastro não expiram, mas também não são renovados. No Pro, seus 500 créditos renovam todo mês. Créditos não usados não acumulam.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">Vejo quanto cada resposta custou?<svg class="faq-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="faq-a">Sim! Após cada resposta da IA aparece um badge mostrando o custo em créditos (ex: "–3 créditos") e o contador na navbar atualiza em tempo real.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">O que acontece quando os créditos acabam?<svg class="faq-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="faq-a">O chat mostra uma mensagem informando que seus créditos acabaram com link para upgrade. Seus projetos e conversas ficam salvos e acessíveis normalmente.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">Posso cancelar quando quiser?<svg class="faq-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="faq-a">Sim, sem fidelidade. Cancele pelo painel de pagamento a qualquer momento. Você mantém acesso até o fim do período pago.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = window.location.origin;
+    const token = localStorage.getItem('cc_token');
+    let currentUser = {};
+    const PLAN_MAX = { free: 50, pro: 500, enterprise: 99999 };
+
+    async function apiFetch(path, opts = {}) {
+        const res = await fetch(API + path, {
+            ...opts,
+            headers: { 'Authorization': 'Bearer ' + (token || ''), 'Content-Type': 'application/json', ...opts.headers }
+        });
+        return res.json();
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+        const b = document.getElementById('planBanner');
+        b.style.cssText = 'display:block;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#22c55e;padding:14px;border-radius:10px;margin-bottom:24px';
+        b.textContent = '🎉 Plano ativado! Seus créditos foram atualizados.';
+        history.replaceState(null, '', 'billing.html');
+    } else if (params.get('cancelled') === 'true') {
+        const b = document.getElementById('planBanner');
+        b.style.cssText = 'display:block;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#ef4444;padding:14px;border-radius:10px;margin-bottom:24px';
+        b.textContent = 'Pagamento cancelado. Tente novamente quando quiser.';
+        history.replaceState(null, '', 'billing.html');
+    }
+
+    async function loadCurrentPlan() {
+        if (!token) { updateUI(); return; }
+        try {
+            const data = await apiFetch('/api/auth/me');
+            if (data && data.user) { currentUser = data.user; updateUI(); renderUsage(); }
+        } catch {}
+    }
+
+    function renderUsage() {
+        const plan = currentUser.plan || 'free';
+        if (plan === 'enterprise') return;
+        const max = PLAN_MAX[plan] || 50;
+        const cur = currentUser.credits || 0;
+        const pct = Math.max(0, Math.min(100, (cur / max) * 100));
+        document.getElementById('usageMeter').style.display = 'block';
+        document.getElementById('creditsRemaining').textContent = cur + ' / ' + max;
+        const fill = document.getElementById('usageBarFill');
+        fill.style.width = pct + '%';
+        if (pct < 20) fill.classList.add('danger');
+        const hint = document.getElementById('usageHint');
+        if (pct < 10) hint.textContent = '⚠️ Créditos quase esgotados! Faça upgrade para continuar criando.';
+        else hint.textContent = 'Suficiente para ~' + Math.floor(cur / 4) + ' projetos completos ainda.';
+    }
+
+    function updateUI() {
+        const plan = currentUser.plan || 'free';
+        const setBtn = (id, cls, txt) => {
+            const btn = document.getElementById(id);
+            btn.className = 'plan-btn ' + cls;
+            btn.textContent = txt;
+        };
+        if (plan === 'free') {
+            setBtn('btn-free', 'current', 'Plano Atual ✓');
+            setBtn('btn-pro', 'primary', 'Assinar Pro — R$29/mês');
+            setBtn('btn-enterprise', 'outline', 'Assinar Enterprise — R$99/mês');
+        } else if (plan === 'pro') {
+            setBtn('btn-free', 'outline', 'Downgrade');
+            setBtn('btn-pro', 'current', 'Plano Atual ✓');
+            setBtn('btn-enterprise', 'outline', 'Fazer Upgrade');
+            document.getElementById('card-pro').style.borderColor = '#22c55e';
+        } else if (plan === 'enterprise') {
+            setBtn('btn-free', 'outline', 'Downgrade');
+            setBtn('btn-pro', 'outline', 'Downgrade');
+            setBtn('btn-enterprise', 'current', 'Plano Atual ✓');
+            document.getElementById('card-enterprise').style.borderColor = '#22c55e';
         }
+    }
 
-        // Check URL params for success/cancel
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('success') === 'true') {
-            const banner = document.getElementById('planBanner');
-            banner.style.display = 'block';
-            banner.style.background = 'rgba(34,197,94,0.1)';
-            banner.style.color = '#22c55e';
-            banner.textContent = `Plano ${params.get('plan') || 'Pro'} ativado com sucesso! Seus créditos foram atualizados.`;
-            history.replaceState(null, '', 'billing.html');
-            currentUser.plan = params.get('plan') || 'pro';
-            localStorage.setItem('cc_user', JSON.stringify(currentUser));
-        } else if (params.get('cancelled') === 'true') {
-            const banner = document.getElementById('planBanner');
-            banner.style.display = 'block';
-            banner.style.background = 'rgba(239,68,68,0.1)';
-            banner.style.color = '#ef4444';
-            banner.textContent = 'Pagamento cancelado. Você pode tentar novamente quando quiser.';
-            history.replaceState(null, '', 'billing.html');
-        }
-
-        async function loadCurrentPlan() {
-            if (!token) return;
-            try {
-                const data = await apiFetch('/api/auth/me');
-                if (data && data.user) {
-                    currentUser = data.user;
-                    localStorage.setItem('cc_user', JSON.stringify(currentUser));
-                    updateUI();
-                }
-            } catch {}
-        }
-
-        function updateUI() {
-            const plan = currentUser.plan || 'free';
-            document.getElementById('btn-free').textContent = plan === 'free' ? 'Plano Atual' : 'Downgrade';
-            document.getElementById('btn-pro').textContent = plan === 'pro' ? 'Plano Atual' : 'Assinar Pro';
-            document.getElementById('btn-enterprise').textContent = plan === 'enterprise' ? 'Plano Atual' : 'Assinar Enterprise';
+    async function selectPlan(plan) {
+        const cur = currentUser.plan || 'free';
+        if (plan === cur) {
             if (plan !== 'free') {
-                document.getElementById('card-' + plan).style.borderColor = 'var(--accent)';
-            }
+                try {
+                    const data = await apiFetch('/api/stripe/portal', { method: 'POST' });
+                    if (data.url) window.location.href = data.url;
+                    else alert('Nenhuma assinatura encontrada para gerenciar.');
+                } catch { alert('Erro ao abrir portal.'); }
+            } else { alert('Voce ja esta no plano Free!'); }
+            return;
         }
+        if (!token) { window.location.href = 'login.html'; return; }
+        if (plan === 'free') { alert('Para fazer downgrade, cancele sua assinatura no portal de pagamento.'); return; }
+        try {
+            const data = await apiFetch('/api/stripe/checkout', { method: 'POST', body: JSON.stringify({ plan }) });
+            if (data.url) window.location.href = data.url;
+            else alert(data.error || 'Stripe nao configurado. Adicione as chaves no .env');
+        } catch { alert('Erro ao conectar com o servidor.'); }
+    }
 
-        async function selectPlan(plan) {
-            const currentPlan = currentUser.plan || 'free';
-            if (plan === currentPlan) {
-                if (plan !== 'free') {
-                    // Open Stripe portal to manage
-                    try {
-                        const data = await apiFetch('/api/stripe/portal', { method: 'POST' });
-                        if (data.url) window.location.href = data.url;
-                        else alert('Nenhuma assinatura encontrada.');
-                    } catch { alert('Erro ao abrir portal.'); }
-                } else {
-                    alert('Você já está no plano Free!');
-                }
-                return;
-            }
+    function toggleFaq(el) {
+        const item = el.closest('.faq-item');
+        const open = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!open) item.classList.add('open');
+    }
 
-            if (!token) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            try {
-                const data = await apiFetch('/api/stripe/checkout', { method: 'POST', body: JSON.stringify({ plan }) });
-                if (data.url) {
-                    window.location.href = data.url;
-                } else {
-                    alert(data.error || 'Erro ao iniciar pagamento. Verifique se a Stripe está configurada.');
-                }
-            } catch {
-                alert('Erro ao conectar com o servidor.');
-            }
-        }
-
-        loadCurrentPlan();
-        updateUI();
-    </script>
-
+    loadCurrentPlan();
+</script>
 </body>
 </html>

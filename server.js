@@ -183,11 +183,19 @@ async function callGeminiWithRotation(parts, history) {
             });
             const result = await chat.sendMessage(parts);
             const text = result.response.text();
+            const usage = result.response.usageMetadata || {};
             markKeyUsed(keyObj.id);
             const newData = loadState();
             newData.currentIndex = ((startIdx + attempt) + 1) % enabledKeys.length;
             saveState(newData);
-            return { text, source: 'gemini', keyName: keyObj.name };
+            return {
+                text,
+                source: 'gemini',
+                keyName: keyObj.name,
+                inputTokens: usage.promptTokenCount || 0,
+                outputTokens: usage.candidatesTokenCount || 0,
+                totalTokens: usage.totalTokenCount || 0
+            };
         } catch (err) {
             console.log(`Key ${keyObj.name} failed: ${err.message}`);
             markKeyFailed(keyObj.id, err.message);
@@ -2272,7 +2280,7 @@ app.post('/api/chat', optionalAuth, async (req, res) => {
     }
 
     // Check credits for logged-in users on free plan
-    if (req.user && req.user.plan !== 'pro' && req.user.plan !== 'enterprise' && req.user.credits <= 0) {
+    if (req.user && req.user.plan !== 'pro' && req.user.plan !== 'enterprise' && req.user.credits < 1) {
         return res.status(402).json({ error: 'Créditos esgotados. Faça upgrade do seu plano.' });
     }
 
@@ -2366,23 +2374,27 @@ Converse com ele pelo primeiro nome. Use o nome dele nas respostas quando apropr
         reply = getMockResponse(userMessage || 'usuário enviou mídia', history);
     }
 
-    // Deduct credit after successful response (free plan only, logged-in users)
-    if (req.user && req.user.plan !== 'pro' && req.user.plan !== 'enterprise') {
-        db.useCredit(req.user.id);
-    }
-
+    // Deduz créditos baseado em tokens reais consumidos (plano free, usuários logados)
+    let creditsUsed = 0;
+    let creditsLeft = req.user ? req.user.credits : null;
+    const outputTokens = result.outputTokens || Math.ceil((reply || '').length / 4);
     const files = parseFilesFromReply(reply);
     const hasFiles = Object.keys(files).length > 0;
 
+    if (req.user && req.user.plan !== 'pro' && req.user.plan !== 'enterprise') {
+        const creditResult = db.useCreditsForTokens(req.user.id, outputTokens, hasFiles);
+        creditsUsed = creditResult.cost || 1;
+        creditsLeft = creditResult.credits;
+    }
+
     if (hasFiles) {
         const msgOnly = reply.replace(/```\w+\n(?:\/\*\s*.+?\s*\*\/\n)?[\s\S]*?```/g, '').trim() || 'Projeto criado com sucesso! ✓';
-        // Save to DB if chatId provided
         if (chatId) {
             db.addMessage(chatId, 'user', userMessage || (hasMedia ? '[Mídia enviada]' : ''));
             db.addMessage(chatId, 'assistant', msgOnly, { filesJson: JSON.stringify(files), code: reply, type: 'web', source });
             db.mergeChatFiles(chatId, files);
         }
-        return res.json({ reply: msgOnly, files, type: 'web', source });
+        return res.json({ reply: msgOnly, files, type: 'web', source, creditsUsed, creditsLeft });
     }
 
     if (chatId) {
@@ -2390,7 +2402,7 @@ Converse com ele pelo primeiro nome. Use o nome dele nas respostas quando apropr
         db.addMessage(chatId, 'assistant', reply, { source });
     }
 
-    res.json({ reply, source });
+    res.json({ reply, source, creditsUsed, creditsLeft });
 });
 
 // === CHAT DATABASE API ===
