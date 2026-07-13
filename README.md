@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # 🐦‍⬛ Corvo Coder
 
@@ -47,7 +47,7 @@ O **Corvo Coder** é uma plataforma de desenvolvimento assistido por IA, inspira
 - Geração de código completo (HTML/CSS/JS) com um único prompt
 - Histórico de conversas com versionamento de código
 - Sistema de créditos por usuário
-- Sugestões de projetos na tela de boas-vindas
+- Design minimalista e focado no prompt de comandos
 
 ### ⬡ VS Code View (Editor Integrado)
 - Editor de código estilo VS Code completo no browser
@@ -233,9 +233,10 @@ npm run dev
 
 ### Chat com o Agente
 
-1. Acesse [http://localhost:3000](http://localhost:3000)
-2. Descreva o que deseja construir no campo de mensagem
-3. O agente irá:
+1. Acesse [http://localhost:3000](http://localhost:3000) (o sistema redirecionará para a tela de login)
+2. Faça login ou crie uma conta local na opção **Criar conta**
+3. Descreva o que deseja construir no campo de mensagem
+4. O agente irá:
    - Fazer perguntas para entender melhor o projeto
    - Apresentar a arquitetura planejada
    - Gerar o código completo em `HTML/CSS/JS`
