@@ -1,6 +1,7 @@
 // === STATE ===
 let files = {};
 let previousFiles = null;
+let chatId = null;
 let openTabs = [];
 let activeTab = null;
 let modifiedFiles = {};
@@ -82,6 +83,7 @@ function loadData() {
     try {
         const data = JSON.parse(raw);
         files = data.files || {};
+        chatId = data.chatId || null;
         if (data.preview) {
             document.getElementById('previewFrame').srcdoc = data.preview;
         }
@@ -423,11 +425,38 @@ function deleteFileByPath(path) {
     else if (parts.length === 3 && files[parts[0]]?.children?.[parts[1]]?.children) delete files[parts[0]].children[parts[1]].children[parts[2]];
 }
 
+function flattenForSave(obj, prefix = '') {
+    const result = {};
+    for (const [name, file] of Object.entries(obj)) {
+        const path = prefix ? prefix + '/' + name : name;
+        if (file.type === 'folder') {
+            Object.assign(result, flattenForSave(file.children || {}, path));
+        } else if (file.content !== undefined) {
+            result[path] = { content: file.content, size: file.content.length };
+        }
+    }
+    return result;
+}
+
 function saveWorkspace() {
     try {
         const preview = document.getElementById('previewFrame')?.srcdoc || '';
-        localStorage.setItem('cc_workspace', JSON.stringify({ files, preview }));
+        localStorage.setItem('cc_workspace', JSON.stringify({ chatId, files, preview }));
         saveVersion(files);
+        
+        // Sincroniza com o banco de dados do servidor
+        if (chatId) {
+            const token = localStorage.getItem('cc_token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            
+            const flatFiles = flattenForSave(files);
+            fetch('/api/chats/' + chatId + '/files', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ files: flatFiles })
+            }).catch(e => console.error('Erro ao sincronizar arquivos com o banco:', e));
+        }
     } catch {}
 }
 

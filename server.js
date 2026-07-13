@@ -2310,6 +2310,23 @@ Créditos restantes: ${req.user.plan === 'pro' || req.user.plan === 'enterprise'
 Converse com ele pelo primeiro nome. Use o nome dele nas respostas quando apropriado.`;
     }
 
+    // Injeta os arquivos atuais do projeto como contexto para o Gemini saber de alterações manuais
+    if (chatId) {
+        try {
+            const projectFiles = db.getChatFiles(chatId) || {};
+            if (Object.keys(projectFiles).length > 0) {
+                promptText += '\n\n## CÓDIGO FONTE ATUAL DO PROJETO (pode conter alterações manuais do usuário que você deve manter e respeitar):\n';
+                for (const [filePath, file] of Object.entries(projectFiles)) {
+                    if (file && typeof file.content === 'string') {
+                        promptText += `\n### Arquivo: ${filePath}\n\`\`\`\n${file.content}\n\`\`\`\n`;
+                    }
+                }
+            }
+        } catch (dbErr) {
+            console.error('Erro ao ler arquivos do chat para o prompt:', dbErr.message);
+        }
+    }
+
     if (siteContext) {
         promptText += '\n\n' + siteContext + '\n\nO usuário enviou um link de site acima. Analise a estrutura, design, cores, layout e conteúdo. Use isso como referência para criar algo similar.';
     }

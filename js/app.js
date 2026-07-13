@@ -102,12 +102,34 @@ async function selectChat(id) {
             code: m.code, type: m.type, source: m.source,
             time: m.created_at ? new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : formatTime(new Date())
         }));
-        currentFiles = data.files || {};
+        
+        // Verifica se há arquivos modificados no localStorage deste chat
+        const localWorkspaceRaw = localStorage.getItem('cc_workspace');
+        let loadedLocal = false;
+        if (localWorkspaceRaw) {
+            try {
+                const localWorkspace = JSON.parse(localWorkspaceRaw);
+                if (localWorkspace.chatId === id && localWorkspace.files) {
+                    currentFiles = localWorkspace.files;
+                    loadedLocal = true;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        if (!loadedLocal) {
+            currentFiles = data.files || {};
+        }
+
         codeVersions = Object.keys(currentFiles).length ? [JSON.parse(JSON.stringify(currentFiles))] : [];
         currentVersionIndex = codeVersions.length - 1;
         renderMessages();
         renderChatList();
         toggleSidebar();
+        
+        // Se carregou o local modificado, sincroniza com o banco de dados do servidor
+        if (loadedLocal) {
+            saveChat();
+        }
     } catch (e) { console.error('Erro ao carregar chat:', e); }
 }
 
@@ -579,11 +601,12 @@ function getPreviewHTML() {
 
 function openWorkspace() {
     localStorage.setItem('cc_workspace', JSON.stringify({
+        chatId: currentChatId,
         project: document.getElementById('projectName')?.textContent || 'Projeto',
         files: currentFiles,
         preview: getPreviewHTML()
-    }));
-    window.location.href = 'pages/vscode.html';
+     }));
+     window.location.href = 'pages/vscode.html';
 }
 
 function deployProject() {
@@ -1019,7 +1042,20 @@ async function init() {
         document.getElementById('navActions').style.display = 'none';
     }
     updateCredits();
-    if (token) await loadChats();
+    if (token) {
+        await loadChats();
+        
+        // Retorna automaticamente para a conversa ativa que estava aberta no VS Code
+        const workspaceRaw = localStorage.getItem('cc_workspace');
+        if (workspaceRaw) {
+            try {
+                const workspace = JSON.parse(workspaceRaw);
+                if (workspace.chatId) {
+                    await selectChat(workspace.chatId);
+                }
+            } catch (e) { console.error('Erro ao retomar chat ativo:', e); }
+        }
+    }
     renderMessages();
     renderTemplates();
     setupDragDrop();
