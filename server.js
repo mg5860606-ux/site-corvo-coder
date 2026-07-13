@@ -35,10 +35,10 @@ if (stripe) {
                 const userId = session.metadata?.user_id;
                 const plan = session.metadata?.plan;
                 if (userId && plan) {
-                    const credits = plan === 'pro' ? 999999 : plan === 'enterprise' ? 999999 : 100;
+                    const credits = plan === 'pro' ? 500 : plan === 'enterprise' ? 999999 : 50;
                     db.setPlan(userId, plan, credits);
                     db.setStripeIds(userId, session.customer, session.subscription);
-                    console.log(`✅ Stripe: User ${userId} upgraded to ${plan}`);
+                    console.log(`✅ Stripe: User ${userId} upgraded to ${plan} with ${credits} credits`);
                 }
                 break;
             }
@@ -48,10 +48,10 @@ if (stripe) {
                 if (user) {
                     if (sub.status === 'active') {
                         const plan = sub.metadata?.plan || 'pro';
-                        const credits = plan === 'pro' ? 999999 : 999999;
+                        const credits = plan === 'pro' ? 500 : 999999;
                         db.setPlan(user.id, plan, credits);
                     } else if (sub.status === 'canceled' || sub.status === 'unpaid') {
-                        db.setPlan(user.id, 'free', 100);
+                        db.setPlan(user.id, 'free', 50);
                     }
                     console.log(`✅ Stripe: Subscription ${sub.status} for user ${user.id}`);
                 }
@@ -61,7 +61,7 @@ if (stripe) {
                 const sub = event.data.object;
                 const user = db.getUserByStripeSub(sub.id);
                 if (user) {
-                    db.setPlan(user.id, 'free', 100);
+                    db.setPlan(user.id, 'free', 50);
                     console.log(`❌ Stripe: User ${user.id} downgraded to free`);
                 }
                 break;
@@ -71,7 +71,7 @@ if (stripe) {
                 if (invoice.subscription) {
                     const user = db.getUserByStripeSub(invoice.subscription);
                     if (user) {
-                        const credits = user.plan === 'enterprise' ? 999999 : 999999;
+                        const credits = user.plan === 'pro' ? 500 : 999999;
                         db.setPlan(user.id, user.plan || 'pro', credits);
                         console.log(`💰 Stripe: Payment received for user ${user.id}, credits refilled`);
                     }
