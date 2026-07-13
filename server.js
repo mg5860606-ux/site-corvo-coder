@@ -2265,14 +2265,14 @@ ${classes}
 ${clean.substring(0, 30000)}`;
 }
 
-app.post('/api/chat', authMiddleware, async (req, res) => {
+app.post('/api/chat', optionalAuth, async (req, res) => {
     const { message, history, images, audio, queuedMessages, chatId } = req.body;
     if (!message && (!images || !images.length) && (!audio || !audio.data)) {
         return res.status(400).json({ error: 'Mensagem obrigatória' });
     }
 
-    // Check credits (skip for paid plans)
-    if (req.user.plan !== 'pro' && req.user.plan !== 'enterprise' && req.user.credits <= 0) {
+    // Check credits for logged-in users on free plan
+    if (req.user && req.user.plan !== 'pro' && req.user.plan !== 'enterprise' && req.user.credits <= 0) {
         return res.status(402).json({ error: 'Créditos esgotados. Faça upgrade do seu plano.' });
     }
 
@@ -2349,8 +2349,8 @@ Converse com ele pelo primeiro nome. Use o nome dele nas respostas quando apropr
         reply = getMockResponse(userMessage || 'usuário enviou mídia', history);
     }
 
-    // Deduct credit after successful response (free plan only)
-    if (req.user.plan !== 'pro' && req.user.plan !== 'enterprise') {
+    // Deduct credit after successful response (free plan only, logged-in users)
+    if (req.user && req.user.plan !== 'pro' && req.user.plan !== 'enterprise') {
         db.useCredit(req.user.id);
     }
 
@@ -2377,6 +2377,20 @@ Converse com ele pelo primeiro nome. Use o nome dele nas respostas quando apropr
 });
 
 // === CHAT DATABASE API ===
+
+// Optional auth — does not reject, just sets req.user if token is valid
+function optionalAuth(req, res, next) {
+    const token = req.headers['authorization']?.replace('Bearer ', '') || req.cookies?.cc_token;
+    if (token) {
+        const session = db.getSession(token);
+        if (session) {
+            req.user = session;
+            req.token = token;
+        }
+    }
+    next();
+}
+
 function authMiddleware(req, res, next) {
     const token = req.headers['authorization']?.replace('Bearer ', '') || req.cookies?.cc_token;
     if (!token) return res.status(401).json({ error: 'Não autenticado' });

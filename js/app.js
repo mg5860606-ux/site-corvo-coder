@@ -1003,11 +1003,6 @@ async function init() {
         }
     }
 
-    if (!token || !user) {
-        window.location.href = 'pages/login.html';
-        return;
-    }
-
     if (user) {
         const av = document.getElementById('userInitial');
         if (av) av.textContent = user.name?.charAt(0)?.toUpperCase() || 'U';
