@@ -23,11 +23,13 @@ function authHeaders() {
 }
 
 async function apiFetch(path, opts = {}) {
-    const res = await fetch(API + path, { ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) } });
+    const token = localStorage.getItem('cc_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(API + path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
     if (res.status === 401) {
         localStorage.removeItem('cc_token');
         localStorage.removeItem('cc_user');
-        window.location.href = 'pages/login.html';
         return null;
     }
     return res.json();
@@ -97,7 +99,8 @@ async function selectChat(id) {
         chatHistory = (data.messages || []).map(m => ({
             id: 'msg-' + m.id, role: m.role, content: m.content,
             files: m.files_json ? JSON.parse(m.files_json) : undefined,
-            code: m.code, type: m.type, source: m.source
+            code: m.code, type: m.type, source: m.source,
+            time: m.created_at ? new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : formatTime(new Date())
         }));
         currentFiles = data.files || {};
         codeVersions = Object.keys(currentFiles).length ? [JSON.parse(JSON.stringify(currentFiles))] : [];
@@ -157,8 +160,10 @@ function renderMessages() {
     let hasCode = false;
     chatHistory.forEach(m => {
         const isUser = m.role === 'user';
+        const isAi = !isUser;
         const div = document.createElement('div');
         div.className = `message ${isUser ? 'user-msg' : ''}`;
+        div.setAttribute('data-msg', m.id || '');
         if (!isUser && (m.files || m.code)) hasCode = true;
 
         let imagesHtml = '';
@@ -175,8 +180,36 @@ function renderMessages() {
         div.innerHTML = `
             <div class="msg-avatar ${isUser ? 'user' : 'ai'}">${isUser ? user.name?.charAt(0)?.toUpperCase() || 'U' : '<img src="logo.jpg" alt="AI">'}</div>
             <div class="msg-body">
-                <div class="msg-name">${isUser ? 'Você' : 'Corvo Coder'}</div>
+                <div class="msg-name">
+                    <span>${isUser ? 'Você' : 'Corvo Coder'}</span>
+                    <span class="msg-time">${m.time || formatTime(new Date())}</span>
+                </div>
                 <div class="msg-text">${formatMsg(m.content)}</div>
+                ${m.model ? `<div class="model-used-badge" title="${m.modelInfo?.desc || ''}">${getModelShortName(m.model, m.modelInfo)}</div>` : ''}${m.guest ? `<a href="pages/login.html" class="guest-badge" title="Faça login para salvar conversas e ter mais créditos">👤 Convidado</a>` : ''}
+                ${isAi && !m.id.startsWith('e-') ? `
+                    <div class="msg-actions">
+                        <button class="speaker-btn" data-msg="${m.id || ''}" onclick="toggleSpeech('${m.id || ''}', '${escapeHtml(m.content).replace(/'/g, '&apos;')}')" title="Ouvir resposta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            Ouvir
+                        </button>
+                    </div>
+                ` : ''}
+                ${m.images && m.images.length > 0 ? m.images.map((img, imgIdx) => `
+                    <div class="gen-image-wrap">
+                        <img src="data:${img.mimeType || 'image/png'};base64,${img.imageData}" class="gen-image" alt="${img.prompt || 'Imagem gerada'}" loading="lazy" onclick="openLightbox(this)" data-mime="${img.mimeType || 'image/png'}" data-prompt="${escapeHtml(img.prompt || '').replace(/'/g, '&apos;')}" title="Clique para ampliar">
+                        <div class="gen-image-actions">
+                            ${img.prompt ? '<span class="gen-image-caption">🎨 ' + escapeHtml(img.prompt) + '</span>' : ''}
+                            <button class="gen-image-dl" onclick="dlImage('${img.imageData}', '${img.mimeType || 'image/png'}')" title="Baixar imagem">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Baixar
+                            </button>
+                            <button class="gen-image-cp" onclick="cpImage('${img.imageData}', '${img.mimeType || 'image/png'}')" title="Copiar imagem">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Copiar
+                            </button>
+                        </div>
+                    </div>
+                `).join('') : ''}
                 ${imagesHtml}
                 ${audioHtml}
             </div>`;
@@ -186,9 +219,112 @@ function renderMessages() {
     msgs.scrollTop = msgs.scrollHeight;
 }
 
+// === PROJECT TEMPLATES ===
+
+const PROJECT_TEMPLATES = [
+    { icon: '🌐', title: 'Landing Page', desc: 'Site institucional moderno', prompt: 'Crie uma landing page moderna e responsiva para uma startup de tecnologia. Inclua: hero section com call-to-action, seção de features com grid de 3 colunas, depoimentos de clientes com avatar, footer com links e redes sociais. Use design limpo com gradientes e animações suaves. Cores principais: roxo (#7c5cfc) e rosa (#f472b6).' },
+    { icon: '📊', title: 'Dashboard', desc: 'Painel administrativo', prompt: 'Crie um dashboard administrativo completo com: sidebar de navegação com ícones, cards de métricas com KPIs animados, gráfico de vendas estilo barras usando CSS puro, tabela de dados com busca e paginação, menu de usuário com dropdown. Design dark mode com destaque em roxo.' },
+    { icon: '👤', title: 'Portfólio', desc: 'Site pessoal criativo', prompt: 'Crie um site de portfólio pessoal moderno com: header fixo com navegação suave, seção hero com foto e frase de efeito, grid de projetos com hover effects 3D, seção de habilidades com progress bars animadas, formulário de contato funcional. Design responsivo e clean.' },
+    { icon: '🛒', title: 'E-commerce', desc: 'Loja virtual simples', prompt: 'Crie uma página de e-commerce com: header com logo e carrinho com contador, grid de produtos com imagens, preços e botão comprar, filtros por categoria, modal de detalhes do produto, carrinho lateral com total e remover. Design moderno e responsivo.' },
+    { icon: '📝', title: 'Blog', desc: 'Plataforma de conteúdo', prompt: 'Crie um blog moderno com: header com navegação e barra de busca, grid de cards de posts com imagens e categorias, página de post individual com barra lateral de tags, seção de comentários, footer com links. Design clean com tipografia elegante e muito espaçamento.' },
+    { icon: '⚡', title: 'SaaS App', desc: 'Aplicativo web completo', prompt: 'Crie uma página de aplicativo SaaS completa com: landing hero com demonstração do produto, pricing table com 3 planos e destaque no recomendado, FAQ accordion interativo, preview do dashboard, formulário de signup multi-step. Design premium com animações suaves. Tema escuro com gradientes.' },
+    { icon: '📱', title: 'App Mobile', desc: 'Interface de app nativo', prompt: 'Crie uma interface de aplicativo mobile-first com: tela de login com background gradient e logo, feed de cards estilo social media com like/compartilhar, tela de perfil com foto e estatísticas, bottom navigation com 4 abas e transições. Design moderno com cantos arredondados e sombras.' },
+    { icon: '🎨', title: 'Galeria de Arte', desc: 'Portfolio visual imersivo', prompt: 'Crie uma galeria de arte interativa com: header minimalista, grid masonry de imagens com lazy loading, lightbox modal com navegação por setas, filtro por categoria/tags, transições suaves entre obras, footer com newsletter. Design elegante e minimalista com foco no conteúdo visual.' }
+];
+
+function renderTemplates() {
+    const grid = document.getElementById('templateGrid');
+    if (!grid) return;
+    grid.innerHTML = PROJECT_TEMPLATES.map((t, i) => `
+        <div class="template-card" data-index="${i}" title="${escapeHtml(t.desc)}">
+            <div class="template-icon">${t.icon}</div>
+            <div class="template-info">
+                <div class="template-title">${escapeHtml(t.title)}</div>
+                <div class="template-desc">${escapeHtml(t.desc)}</div>
+            </div>
+        </div>
+    `).join('');
+    grid.onclick = (e) => {
+        const card = e.target.closest('.template-card');
+        if (card) {
+            const idx = parseInt(card.dataset.index);
+            if (!isNaN(idx) && PROJECT_TEMPLATES[idx]) {
+                applyTemplate(PROJECT_TEMPLATES[idx].prompt);
+            }
+        }
+    };
+}
+
+function applyTemplate(prompt) {
+    document.getElementById('chatInput').value = prompt;
+    send();
+}
+
+// === EXPORT CHAT ===
+
+function exportChatAsTxt() {
+    if (!chatHistory.length) {
+        showToast('Nenhuma conversa para exportar', 'error');
+        return;
+    }
+
+    let text = '═══════════════════════════════════════════\n';
+    text += '        CORVO CODER — CONVERSA EXPORTADA\n';
+    text += '═══════════════════════════════════════════\n';
+    text += `Data: ${new Date().toLocaleString('pt-BR')}\n`;
+    text += `Mensagens: ${chatHistory.length}\n`;
+    text += '───────────────────────────────────────────\n\n';
+
+    chatHistory.forEach((m, i) => {
+        const name = m.role === 'user' ? '👤 VOCÊ' : '🤖 CORVO CODER';
+        text += `[${name}]\n`;
+        text += `${m.content}\n`;
+        if (m.images?.length) text += `\n📷 ${m.images.length} imagem(ns) anexada(s)\n`;
+        if (m.hasAudio) text += `\n🎤 Áudio anexado\n`;
+        text += '\n─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─\n\n';
+    });
+
+    text += '═══════════════════════════════════════════\n';
+    text += `Fim da conversa — ${chatHistory.length} mensagens\n`;
+    text += `Exportado em: ${new Date().toLocaleString('pt-BR')}\n`;
+    text += '═══════════════════════════════════════════\n';
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `corvo-conversa-${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✅ Conversa exportada como .txt');
+}
+
 function useSuggestion(text) {
     document.getElementById('chatInput').value = text;
     send();
+}
+
+// === KEYBOARD SHORTCUTS ===
+
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        const ctrl = e.ctrlKey || e.metaKey;
+        if (!ctrl) return;
+
+        switch (e.key.toLowerCase()) {
+            case 'k':
+                e.preventDefault();
+                newChat();
+                showToast('✨ Nova conversa iniciada');
+                break;
+            case 'e':
+                e.preventDefault();
+                exportChatAsTxt();
+                break;
+        }
+    });
 }
 
 function autoResize(el) {
@@ -201,6 +337,206 @@ function handleKey(e) {
 }
 
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+function formatTime(d) {
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Download generated image
+function dlImage(base64, mimeType) {
+    const a = document.createElement('a');
+    a.href = `data:${mimeType};base64,${base64}`;
+    a.download = `corvo-imagem-${Date.now()}.${mimeType.split('/')[1] || 'png'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✅ Imagem baixada');
+}
+
+// Copy generated image to clipboard
+async function cpImage(base64, mimeType) {
+    try {
+        // Direct base64 → blob conversion (more reliable than fetch dataURL)
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: mimeType });
+        await navigator.clipboard.write([
+            new ClipboardItem({ [mimeType]: blob })
+        ]);
+        showToast('📋 Imagem copiada!');
+    } catch (err) {
+        showToast('Erro ao copiar: ' + err.message);
+    }
+}
+
+// === TEXT-TO-SPEECH ===
+let _speakingId = null;
+const _SPEAKER_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+const _STOP_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+
+function setSpeakerBtn(msgId, icon, label) {
+    const btn = document.querySelector(`.speaker-btn[data-msg="${msgId}"]`);
+    if (btn) {
+        btn.innerHTML = icon + ' ' + label;
+        btn.title = label === 'Parar' ? 'Parar reprodução' : 'Ouvir resposta';
+    }
+}
+
+function toggleSpeech(msgId, text) {
+    // If this message is already speaking, stop it
+    if (_speakingId === msgId) {
+        stopSpeaking();
+        return;
+    }
+
+    // Cancel any previous speech
+    if (_speakingId) {
+        const prevEl = document.querySelector(`.message[data-msg="${_speakingId}"]`);
+        if (prevEl) prevEl.classList.remove('speaking');
+        setSpeakerBtn(_speakingId, _SPEAKER_ICON, 'Ouvir');
+    }
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+
+    // Strip markdown/code markers for cleaner speech
+    const cleanText = text
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/[#*_~\[\]()>|]/g, '')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
+
+    if (!cleanText) {
+        showToast('Nada para falar', 'error');
+        return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Try to find a Brazilian Portuguese voice
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoice = voices.find(v => v.lang.startsWith('pt'));
+    if (ptVoice) utterance.voice = ptVoice;
+
+    _speakingId = msgId;
+
+    // Add speaking class to this message, update its button
+    const msgEl = document.querySelector(`.message[data-msg="${msgId}"]`);
+    if (msgEl) msgEl.classList.add('speaking');
+    setSpeakerBtn(msgId, _STOP_ICON, 'Parar');
+
+    utterance.onend = () => {
+        const el = document.querySelector(`.message[data-msg="${_speakingId}"]`);
+        if (el) el.classList.remove('speaking');
+        setSpeakerBtn(_speakingId, _SPEAKER_ICON, 'Ouvir');
+        _speakingId = null;
+    };
+
+    utterance.onerror = () => {
+        const el = document.querySelector(`.message[data-msg="${_speakingId}"]`);
+        if (el) el.classList.remove('speaking');
+        setSpeakerBtn(_speakingId, _SPEAKER_ICON, 'Ouvir');
+        _speakingId = null;
+        showToast('Erro ao reproduzir áudio', 'error');
+    };
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function stopSpeaking() {
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+    if (_speakingId) {
+        const el = document.querySelector(`.message[data-msg="${_speakingId}"]`);
+        if (el) el.classList.remove('speaking');
+        setSpeakerBtn(_speakingId, _SPEAKER_ICON, 'Ouvir');
+        _speakingId = null;
+    }
+}
+
+// Pre-load voices (they load asynchronously)
+if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices(); // Trigger async load
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+}
+
+// Lightbox modal for generated images
+let _lbKeyHandler = null;
+
+function openLightbox(imgEl) {
+    // Clean up any previous listener to prevent leaks
+    if (_lbKeyHandler) {
+        document.removeEventListener('keydown', _lbKeyHandler);
+        _lbKeyHandler = null;
+    }
+
+    // Extract data from the clicked img element via dataset (avoids quote-escaping issues)
+    const src = imgEl.src;
+    const mimeType = imgEl.dataset.mime || 'image/png';
+    const prompt = imgEl.dataset.prompt || '';
+
+    const existing = document.getElementById('lightbox-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'lightbox-overlay';
+    overlay.className = 'lightbox-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) closeLightbox(); };
+
+    overlay.innerHTML = `
+        <button class="lightbox-close" onclick="closeLightbox()" title="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <img src="${src}" class="lightbox-image" alt="${prompt || 'Imagem'}">
+            ${prompt ? '<div class="lightbox-caption">🎨 ' + prompt + '</div>' : ''}
+            <div class="lightbox-actions">
+                <button class="lightbox-btn" onclick="event.stopPropagation(); dlImage('${src.split(',').pop()}', '${mimeType}')" title="Baixar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Baixar
+                </button>
+                <button class="lightbox-btn" onclick="event.stopPropagation(); cpImage('${src.split(',').pop()}', '${mimeType}')" title="Copiar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copiar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+
+    // Keyboard: Escape to close (stored in global ref for cleanup)
+    _lbKeyHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeLightbox();
+        }
+    };
+    document.addEventListener('keydown', _lbKeyHandler);
+}
+
+function closeLightbox() {
+    const overlay = document.getElementById('lightbox-overlay');
+    if (overlay) {
+        overlay.classList.remove('open');
+        setTimeout(() => overlay.remove(), 250);
+    }
+    // Always clean up keyboard listener
+    if (_lbKeyHandler) {
+        document.removeEventListener('keydown', _lbKeyHandler);
+        _lbKeyHandler = null;
+    }
+}
 
 function formatMsg(text) {
     let s = escapeHtml(text);
@@ -285,11 +621,7 @@ async function send() {
 
     if (!text && !hasImages && !hasAudio) return;
 
-    // Require login to send messages
-    if (!token || !user) {
-        window.location.href = 'pages/login.html';
-        return;
-    }
+
 
     // Build user content for display
     let displayContent = text || '';
@@ -300,7 +632,7 @@ async function send() {
     if (isProcessing) {
         if (!pendingQueue) pendingQueue = [];
         pendingQueue.push({ text, displayContent, images: pendingImages.map(i => ({ preview: i.preview, name: i.name })), apiImages: pendingImages.map(i => ({ data: i.data, mimeType: i.mimeType })), audio: pendingAudio ? { data: pendingAudio.data, mimeType: pendingAudio.mimeType } : null });
-        chatHistory.push({ id: 'u-' + Date.now(), role: 'user', content: displayContent });
+        chatHistory.push({ id: 'u-' + Date.now(), role: 'user', content: displayContent, time: formatTime(new Date()) });
         renderMessages();
         pendingImages = [];
         pendingAudio = null;
@@ -311,12 +643,11 @@ async function send() {
         return;
     }
 
-    isProcessing = true;
-
-    chatHistory.push({
+    isProcessing = true;    chatHistory.push({
         id: 'u-' + Date.now(), role: 'user', content: displayContent,
         images: hasImages ? pendingImages.map(i => ({ preview: i.preview, name: i.name })) : undefined,
-        hasAudio: hasAudio
+        hasAudio: hasAudio,
+        time: formatTime(new Date())
     });
     renderMessages();
 
@@ -388,7 +719,6 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
 
         if (res.status === 401) {
             localStorage.removeItem('cc_token');
-            window.location.href = 'pages/login.html';
             return;
         }
 
@@ -405,7 +735,12 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
         const aiMsg = {
             id: 'a-' + Date.now(), role: 'assistant', content: reply,
             files, code: hasFiles ? (files['index.html']?.content || '') : (data.code || null),
-            type: data.type || 'web', source: data.source
+            type: data.type || 'web', source: data.source,
+            images: data.images || undefined,
+            model: data.selectedModel || null,
+            modelInfo: data.selectedModelInfo || null,
+            guest: data.guest || false,
+            time: formatTime(new Date())
         };
         chatHistory.push(aiMsg);
 
@@ -425,6 +760,10 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
 
         await loadChats();
         renderMessages();
+        // Auto-play: speak the AI response
+        if (reply && !reply.startsWith('Desculpe, erro')) {
+            toggleSpeech(aiMsg.id, reply);
+        }
     } catch (err) {
         const thinkEl = document.getElementById(thinkId);
         if (thinkEl) thinkEl.remove();
@@ -634,11 +973,11 @@ function stopAudioRecord() {
     document.getElementById('micBtn')?.classList.remove('recording');
 }
 
-function showToast(msg) {
+function showToast(msg, type) {
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
-    toast.className = 'toast success';
+    toast.className = 'toast ' + (type || 'success');
     toast.textContent = msg;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
@@ -647,15 +986,26 @@ function showToast(msg) {
 // === INIT ===
 
 async function init() {
-    // Try to load user if token exists, but don't block
+    // Try to load user if token exists
     if (token) {
         try {
             const data = await apiFetch('/api/auth/me');
             if (data && data.user) {
                 user = data.user;
                 credits = user.credits;
+            } else {
+                token = null;
+                localStorage.removeItem('cc_token');
+                localStorage.removeItem('cc_user');
             }
-        } catch {}
+        } catch {
+            // Server not available — anonymous mode
+        }
+    }
+
+    if (!token || !user) {
+        window.location.href = 'pages/login.html';
+        return;
     }
 
     if (user) {
@@ -665,11 +1015,34 @@ async function init() {
         if (dd) dd.textContent = user.name || 'Usuário';
         const de = document.getElementById('dropdownEmail');
         if (de) de.textContent = user.email || '';
+        document.getElementById('creditsPill').style.display = 'flex';
+        document.getElementById('avatarBtn').style.display = 'flex';
+    } else {
+        // Guest mode — hide user UI, show login prompt
+        document.getElementById('creditsPill').style.display = 'none';
+        document.getElementById('avatarBtn').style.display = 'none';
+        document.getElementById('navActions').style.display = 'none';
     }
     updateCredits();
     if (token) await loadChats();
     renderMessages();
+    renderTemplates();
     setupDragDrop();
+    setupKeyboardShortcuts();
+    loadUserModel();
+}
+
+async function loadUserModel() {
+    try {
+        const data = await apiFetch('/api/user/model');
+        if (data && data.model) {
+            const badge = document.getElementById('modelBadgeName');
+            if (badge) {
+                const shortName = data.modelInfo?.name || data.model.split('/').pop() || data.model;
+                badge.textContent = shortName;
+            }
+        }
+    } catch {}
 }
 
 async function logout() {

@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+*.md
+.DS_Store
+.env
+.env.local
+corvo.db
+keys.json
+backups/
+node_modules/
+.git/

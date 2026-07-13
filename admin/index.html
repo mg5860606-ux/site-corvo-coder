@@ -207,6 +207,11 @@
                     <span class="nav-badge" id="alertBadge">0</span>
                 </div>
                 <div class="nav-section">Sistema</div>
+                <div class="nav-item" data-section="analytics" onclick="showSection('analytics', this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c-4.97 0-9-4.03-9-9" /><path d="M21 12c0 4.97-4.03 9-9 9" /><path d="M12 3v9h9" /></svg>
+                    Analytics
+                    <span class="nav-badge" id="analyticsBadge">0</span>
+                </div>
                 <div class="nav-item" data-section="apikeys" onclick="showSection('apikeys', this)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
                     API Keys
@@ -463,6 +468,107 @@
                     </div>
                 </div>
 
+                <!-- Analytics Section -->
+                <div id="sec-analytics" style="display:none">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Usuários Ativos Agora</span>
+                                <div class="stat-icon" style="background:rgba(34,197,94,0.12)">🟢</div>
+                            </div>
+                            <div class="stat-value" id="analActiveNow">0</div>
+                            <div class="stat-change up">últimos 5 min</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Visitantes Únicos (24h)</span>
+                                <div class="stat-icon" style="background:rgba(59,130,246,0.12)">👥</div>
+                            </div>
+                            <div class="stat-value" id="analUniqueVisitors">0</div>
+                            <div class="stat-change up">últimas 24h</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Eventos Hoje</span>
+                                <div class="stat-icon" style="background:rgba(124,92,252,0.12)">📊</div>
+                            </div>
+                            <div class="stat-value" id="analTotalEvents">0</div>
+                            <div class="stat-change up">total em 24h</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Usuários</span>
+                                <div class="stat-icon" style="background:rgba(234,179,8,0.12)">👤</div>
+                            </div>
+                            <div class="stat-value" id="analTotalUsers">0</div>
+                            <div class="stat-change">cadastrados</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Chats</span>
+                                <div class="stat-icon" style="background:rgba(244,114,182,0.12)">💬</div>
+                            </div>
+                            <div class="stat-value" id="analTotalChats">0</div>
+                            <div class="stat-change">criados</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Mensagens</span>
+                                <div class="stat-icon" style="background:rgba(34,197,94,0.12)">✉️</div>
+                            </div>
+                            <div class="stat-value" id="analTotalMessages">0</div>
+                            <div class="stat-change">enviadas</div>
+                        </div>
+                    </div>
+
+                    <div class="panels">
+                        <div class="panel full-panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Eventos por Tipo (24h)</span>
+                            </div>
+                            <div class="panel-body" id="analByType" style="max-height:260px"></div>
+                        </div>
+                    </div>
+
+                    <div class="panels">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Páginas mais Visitadas (24h)</span>
+                            </div>
+                            <div class="panel-body" id="analByPage" style="max-height:260px"></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Endpoints mais Acessados (24h)</span>
+                            </div>
+                            <div class="panel-body" id="analByEndpoint" style="max-height:260px"></div>
+                        </div>
+                    </div>
+
+                    <div class="panels">
+                        <div class="panel full-panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Atividade por Hora (24h)</span>
+                            </div>
+                            <div class="panel-body" style="max-height:200px;padding:16px">
+                                <div class="bars" id="analHourlyBars" style="display:flex;align-items:flex-end;gap:4px;height:120px"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panels">
+                        <div class="panel full-panel">
+                            <div class="panel-header">
+                                <span class="panel-title">Histórico Diário (30 dias)</span>
+                                <button class="topbar-btn ghost" onclick="loadAnalytics()" style="padding:4px 10px;font-size:0.7rem">Atualizar</button>
+                            </div>
+                            <div class="panel-body" style="max-height:250px;padding:16px">
+                                <div class="bars" id="analDailyBars" style="display:flex;align-items:flex-end;gap:3px;height:100px"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Settings Section -->
                 <div id="sec-settings" style="display:none">
                     <div class="panel full-panel">
@@ -529,11 +635,12 @@
             document.getElementById('sectionTitle').textContent = {
                 dashboard: 'Dashboard', agent: 'Agente', users: 'Usuários', logs: 'Logs',
                 alerts: 'Alertas', deploy: 'Deploy', decisions: 'Decisões', settings: 'Configurações',
-                apikeys: 'API Keys'
+                apikeys: 'API Keys', analytics: 'Analytics'
             }[name] || name;
             currentSection = name;
             refresh();
             if (name === 'apikeys') loadKeys();
+            if (name === 'analytics') loadAnalytics();
         }
 
         async function api(path, opts = {}) {
@@ -739,11 +846,108 @@
             loadKeys();
         }
 
-        // Override refresh to include keys
+        // === ANALYTICS ===
+        async function loadAnalytics() {
+            const summary = await api('/api/analytics/summary');
+            const sessions = await api('/api/analytics/sessions');
+            const history = await api('/api/analytics/history?days=30');
+
+            if (summary) {
+                document.getElementById('analTotalEvents').textContent = summary.total || 0;
+                document.getElementById('analUniqueVisitors').textContent = summary.uniqueVisitors || 0;
+                document.getElementById('analyticsBadge').textContent = summary.total || 0;
+
+                // By type
+                if (summary.byType && summary.byType.length) {
+                    const maxType = Math.max(...summary.byType.map(t => t.count));
+                    document.getElementById('analByType').innerHTML = summary.byType.map(t => {
+                        const pct = (t.count / (maxType || 1)) * 100;
+                        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.75rem">' +
+                            '<span style="width:80px;flex-shrink:0;color:var(--muted)">' + escapeHtml(t.event_type) + '</span>' +
+                            '<div style="flex:1;height:20px;background:var(--bg3);border-radius:4px;overflow:hidden">' +
+                            '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--accent),var(--pink));border-radius:4px;transition:width 0.5s"></div></div>' +
+                            '<span style="font-weight:600;min-width:30px;text-align:right">' + t.count + '</span></div>';
+                    }).join('');
+                } else {
+                    document.getElementById('analByType').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Nenhum evento ainda</div>';
+                }
+
+                // By page
+                if (summary.byPage && summary.byPage.length) {
+                    const maxPage = Math.max(...summary.byPage.map(p => p.count));
+                    document.getElementById('analByPage').innerHTML = summary.byPage.map(p => {
+                        const pct = (p.count / (maxPage || 1)) * 100;
+                        return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:0.72rem">' +
+                            '<span style="flex:1;color:var(--muted)">' + escapeHtml(p.page) + '</span>' +
+                            '<div style="width:80px;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden">' +
+                            '<div style="height:100%;width:' + pct + '%;background:var(--blue);border-radius:4px"></div></div>' +
+                            '<span style="font-weight:600">' + p.count + '</span></div>';
+                    }).join('');
+                } else {
+                    document.getElementById('analByPage').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Nenhuma página visitada</div>';
+                }
+
+                // By endpoint
+                if (summary.byEndpoint && summary.byEndpoint.length) {
+                    const maxEp = Math.max(...summary.byEndpoint.map(e => e.count));
+                    document.getElementById('analByEndpoint').innerHTML = summary.byEndpoint.map(e => {
+                        const pct = (e.count / (maxEp || 1)) * 100;
+                        return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:0.72rem">' +
+                            '<span style="flex:1;color:var(--muted);font-family:monospace;font-size:0.65rem">' + escapeHtml(e.endpoint) + '</span>' +
+                            '<div style="width:80px;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden">' +
+                            '<div style="height:100%;width:' + pct + '%;background:var(--green);border-radius:4px"></div></div>' +
+                            '<span style="font-weight:600">' + e.count + '</span></div>';
+                    }).join('');
+                } else {
+                    document.getElementById('analByEndpoint').innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Nenhum endpoint acessado</div>';
+                }
+
+                // Hourly bars
+                if (summary.hourly && summary.hourly.length) {
+                    const maxH = Math.max(...summary.hourly.map(h => h.count));
+                    document.getElementById('analHourlyBars').innerHTML = summary.hourly.map(h => {
+                        const pct = maxH > 0 ? (h.count / maxH) * 100 : 0;
+                        const hour = h.hour.padStart(2, '0');
+                        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">' +
+                            '<span style="font-size:0.55rem;color:var(--muted)">' + h.count + '</span>' +
+                            '<div style="width:100%;height:' + pct + '%;min-height:4px;background:linear-gradient(to top,var(--accent),var(--pink));border-radius:3px 3px 0 0;transition:height 0.5s"></div>' +
+                            '<span style="font-size:0.55rem;color:var(--muted)">' + hour + 'h</span></div>';
+                    }).join('');
+                } else {
+                    document.getElementById('analHourlyBars').innerHTML = '<span style="color:var(--muted);width:100%;text-align:center">Sem dados</span>';
+                }
+            }
+
+            if (sessions) {
+                document.getElementById('analActiveNow').textContent = sessions.activeNow || 0;
+                document.getElementById('analTotalUsers').textContent = sessions.totalUsers || 0;
+                document.getElementById('analTotalChats').textContent = sessions.totalChats || 0;
+                document.getElementById('analTotalMessages').textContent = sessions.totalMessages || 0;
+            }
+
+            // Daily history bars
+            if (history && history.history && history.history.length) {
+                const maxD = Math.max(...history.history.map(d => d.count));
+                document.getElementById('analDailyBars').innerHTML = history.history.map(d => {
+                    const pct = maxD > 0 ? (d.count / maxD) * 100 : 0;
+                    const label = d.date ? d.date.slice(5) : '';
+                    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">' +
+                        '<span style="font-size:0.5rem;color:var(--muted)">' + d.count + '</span>' +
+                        '<div style="width:100%;height:' + pct + '%;min-height:3px;background:var(--blue);border-radius:2px"></div>' +
+                        '<span style="font-size:0.5rem;color:var(--muted)">' + label + '</span></div>';
+                }).join('');
+            } else {
+                document.getElementById('analDailyBars').innerHTML = '<span style="color:var(--muted);width:100%;text-align:center">Sem dados históricos</span>';
+            }
+        }
+
+        // Override refresh to include keys and analytics
         const _origRefresh = refresh;
+        const _origShowSection = showSection;
         refresh = async function() {
             await _origRefresh();
             if (currentSection === 'apikeys') loadKeys();
+            if (currentSection === 'analytics') loadAnalytics();
         };
 
         // Auto-init: show dashboard

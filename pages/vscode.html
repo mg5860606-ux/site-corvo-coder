@@ -8,6 +8,21 @@
     <link rel="stylesheet" href="../css/vscode.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Monaco Editor via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+    <!-- xterm.js for real terminal -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <!-- Prettier for code formatting -->
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/standalone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/html.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/postcss.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/estree.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/babel.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/typescript.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/markdown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prettier@3.4.2/plugins/yaml.js"></script>
 </head>
 <body>
     <div class="vscode">
@@ -37,6 +52,14 @@
                 <button class="tb-btn" id="btnSearch" onclick="toggleSearch()" title="Buscar (Ctrl+F)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </button>
+                <button class="tb-btn" id="btnDeploy" onclick="deployProject(event)" title="Deploy para Netlify">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    Deploy
+                </button>
+                <button class="tb-btn" id="btnGitHub" onclick="pushToGitHub()" title="Push projeto para GitHub (git)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                    GitHub
+                </button>
                 <button class="tb-btn" id="btnTerminal" onclick="toggleTerminal()" title="Terminal (Ctrl+`)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
                 </button>
@@ -65,6 +88,12 @@
                     <button class="activity-btn" onclick="switchActivity('extensions')" title="Extensões" id="actExtensions">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
                     </button>
+                    <button class="activity-btn" onclick="switchActivity('design')" title="Modo Design (Arrastar & Soltar)" id="actDesign">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l9 4-9 4-9-4 9-4z"/><path d="M3 9l9 4 9-4"/><path d="M3 15l9 4 9-4"/><path d="M3 12l9 4 9-4"/></svg>
+                    </button>
+                    <button class="activity-btn" onclick="switchActivity('collaboration')" title="Colaboração em tempo real" id="actCollaboration">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </button>
                 </div>
                 <div class="activity-bottom">
                     <button class="activity-btn" title="Contas">
@@ -92,6 +121,14 @@
                             <button class="sb-icon" onclick="refreshTree()" title="Atualizar">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                             </button>
+                            <button class="sb-icon" onclick="downloadSelectedFiles()" title="Baixar selecionados">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Sel.
+                            </button>
+                            <button class="sb-icon" onclick="newFromTemplate()" title="Novo de Template">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                Template
+                            </button>
                         </div>
                     </div>
                     <div class="project-header" id="projectHeader">
@@ -115,10 +152,18 @@
                     </div>
                 </div>
 
-                <!-- GIT -->
+                <!-- GIT / DIFF -->
                 <div class="sidebar-panel" id="panelGit">
-                    <div class="sidebar-header"><span>SOURCE CONTROL</span></div>
-                    <div class="sidebar-content" style="padding:16px">
+                    <div class="sidebar-header">
+                        <span>SOURCE CONTROL</span>
+                        <button class="sb-icon" onclick="acceptChanges()" title="Aceitar todas as alterações">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </button>
+                        <button class="sb-icon" onclick="renderGitChanges()" title="Atualizar diff">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        </button>
+                    </div>
+                    <div class="sidebar-content" style="padding:12px">
                         <div class="git-status">
                             <div class="git-branch">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
@@ -126,7 +171,7 @@
                             </div>
                             <div class="git-changes" id="gitChanges">
                                 <div class="git-section-title">Alterações</div>
-                                <div class="git-file" style="color:var(--muted);font-size:0.75rem;padding:8px">Nenhuma alteração</div>
+                                <div style="color:var(--muted);font-size:0.75rem;padding:8px">Comparando com snapshot anterior...</div>
                             </div>
                         </div>
                     </div>
@@ -175,6 +220,90 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- COLLABORATION -->
+                <div class="sidebar-panel" id="panelCollaboration">
+                    <div class="sidebar-header">
+                        <span>👥 COLABORAÇÃO</span>
+                    </div>
+                    <div class="collab-content" id="collabContent">
+                        <div class="collab-section">
+                            <div class="collab-connect" id="collabConnect">
+                                <div class="collab-status" id="collabStatus">
+                                    <span class="collab-dot offline"></span>
+                                    <span>Desconectado</span>
+                                </div>
+                                <div class="collab-form-group">
+                                    <label>Seu nome</label>
+                                    <input type="text" id="collabUserName" placeholder="Digite seu nome..." maxlength="20">
+                                </div>
+                                <div class="collab-btns">
+                                    <button class="collab-btn primary" onclick="createCollabRoom()">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                                        Criar Sala
+                                    </button>
+                                    <button class="collab-btn" onclick="promptJoinRoom()">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>
+                                        Entrar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="collab-room" id="collabRoom" style="display:none">
+                                <div class="collab-room-header">
+                                    <span class="collab-dot online"></span>
+                                    <span id="collabStatusText">Conectado</span>
+                                </div>
+                                <div class="collab-room-code">
+                                    <div class="collab-code-label">CÓDIGO DA SALA</div>
+                                    <div class="collab-code-digits" id="collabRoomCode">------</div>
+                                    <button class="collab-btn small" onclick="copyCollabRoomCode()" title="Copiar código">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                        Copiar
+                                    </button>
+                                </div>
+                                <div class="collab-share">
+                                    <span style="font-size:0.65rem;color:var(--muted)">Compartilhe o código com outros devs</span>
+                                </div>
+                                <div class="collab-users section">
+                                    <div class="collab-users-header">
+                                        <span>👥 Membros</span>
+                                        <span class="collab-count" id="collabUserCount">0</span>
+                                    </div>
+                                    <div class="collab-users-list" id="collabUsersList">
+                                        <div style="padding:12px;text-align:center;color:var(--muted);font-size:0.75rem">Aguardando...</div>
+                                    </div>
+                                </div>
+                                <div class="collab-sync-info">
+                                    <span style="font-size:0.65rem;color:var(--muted)">✓ Alterações sincronizadas em tempo real</span>
+                                </div>
+                                <button class="collab-btn secondary" onclick="leaveCollabRoom()" style="width:100%;margin-top:8px">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                                    Sair da Sala
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DESIGN MODE -->
+                <div class="sidebar-panel" id="panelDesign">
+                    <div class="sidebar-header">
+                        <span>🎨 COMPONENTES</span>
+                        <button class="sb-icon" onclick="closeDesignMode()" title="Fechar Design">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="design-search">
+                        <input type="text" id="designSearch" placeholder="Buscar componentes..." oninput="filterDesignComponents(this.value)">
+                    </div>
+                    <div class="sidebar-content design-palette" id="designPalette"></div>
+                    <div class="design-actions">
+                        <button class="run-btn" onclick="insertDesignComponent()" style="width:100%;font-size:0.7rem;padding:6px 12px">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Inserir no Código
+                        </button>
+                    </div>
+                </div>
             </aside>
 
             <!-- RESIZE HANDLE -->
@@ -209,18 +338,17 @@
                             </div>
                             <div class="welcome-shortcuts">
                                 <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>S</kbd> Salvar arquivo</div>
-                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>F</kbd> Buscar no código</div>
+                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>P</kbd> Ir para arquivo</div>
+                                <div class="shortcut"><kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> Formatar código</div>
                                 <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>`</kbd> Abrir terminal</div>
+                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>Scroll</kbd> Zoom no editor</div>
+                                <div class="shortcut"><kbd>Ctrl</kbd>+<kbd>+/-</kbd> Zoom +/–</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="code-editor" id="codeEditor" style="display:none">
-                        <div class="line-numbers" id="lineNumbers"></div>
-                        <div class="editor-wrapper">
-                            <textarea class="code-textarea" id="codeTextarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off" oninput="onCodeChange()" onkeydown="onEditorKeydown(event)" onscroll="syncScroll()" onclick="updateCursorPos()" onkeyup="updateCursorPos()"></textarea>
-                            <pre class="code-highlight" id="codeHighlight"><code id="codeHighlightContent"></code></pre>
-                        </div>
+                        <div id="monacoContainer" style="width:100%;height:100%"></div>
                     </div>
                 </div>
 
@@ -296,10 +424,26 @@
             </div>
             <div class="statusbar-right">
                 <span class="sb-item" id="sbCursor">Ln 1, Col 1</span>
+                <span class="sb-item" id="sbAutoSave" style="font-size:0.65rem"></span>
+                <span class="sb-item" id="sbZoom" style="cursor:pointer" onclick="editorFontSize=12;monacoEditor?.updateOptions({fontSize:12});updateZoomStatus();monacoEditor2?.updateOptions({fontSize:12});showToast('success','Zoom resetado')" title="Ctrl+Scroll para zoom • Clique para resetar">12px</span>
                 <span class="sb-item" id="sbSpaces">Espaços: 2</span>
                 <span class="sb-item" id="sbEncoding">UTF-8</span>
                 <span class="sb-item" id="sbEol">LF</span>
                 <span class="sb-item" id="sbLanguage" style="cursor:pointer">HTML</span>
+                <span class="sb-item" id="sbFormat" onclick="formatCode()" title="Formatar código (Shift+Alt+F)" style="cursor:pointer;display:flex;align-items:center;gap:4px">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="2" y1="4" x2="14" y2="4"/>
+                        <line x1="3" y1="8" x2="13" y2="8"/>
+                        <line x1="4" y1="12" x2="12" y2="12"/>
+                    </svg>
+                    Formatar
+                </span>
+                <span class="sb-item" id="btnSplitEditor" onclick="toggleSplitEditor()" title="Dividir editor (lado a lado)" style="cursor:pointer;display:flex;align-items:center;gap:2px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="18"/></svg>
+                </span>
+                <span class="sb-item" id="btnVersions" onclick="undoToPreviousVersion()" title="Desfazer para versão anterior" style="cursor:pointer;display:flex;align-items:center;gap:2px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </span>
                 <span class="sb-item sb-ok">● Corvo Agent</span>
             </div>
         </footer>
@@ -325,6 +469,10 @@
             Baixar Projeto (ZIP)
         </div>
         <div class="ctx-sep"></div>
+        <div class="ctx-item" onclick="ctxRenameFile()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Renomear
+        </div>
         <div class="ctx-item" onclick="ctxCopyPath()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Copiar Caminho
@@ -340,15 +488,25 @@
         </div>
     </div>
 
+    <!-- QUICK OPEN (Ctrl+P) -->
+    <div class="quick-open-overlay" id="quickOpen" style="display:none" onclick="if(event.target===this)closeQuickOpen()">
+        <div class="quick-open-box">
+            <div class="quick-open-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="quick-open-icon"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <input type="text" id="quickOpenInput" class="quick-open-input" placeholder="Buscar arquivos por nome..." spellcheck="false" autocomplete="off">
+            </div>
+            <div class="quick-open-results" id="quickOpenResults">
+                <div class="quick-open-empty">Digite para buscar arquivos</div>
+            </div>
+            <div class="quick-open-footer">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+                <span><kbd>↵</kbd> abrir</span>
+                <span><kbd>Esc</kbd> fechar</span>
+            </div>
+        </div>
+    </div>
+
     <script src="../js/vscode.js"></script>
-    <a href="#" class="wa-float" id="waFloat" target="_blank" rel="noopener" title="Fale conosco no WhatsApp" style="position:fixed;bottom:24px;right:24px;z-index:999;width:56px;height:56px;border-radius:50%;background:#25d366;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,0.4);text-decoration:none">
-        <svg viewBox="0 0 24 24" fill="currentColor" style="width:28px;height:28px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    </a>
-    <script>
-        fetch('/api/config').then(r=>r.json()).then(d=>{
-            if(d.whatsapp){document.getElementById('waFloat').href='https://wa.me/'+d.whatsapp.replace(/[^0-9]/g,'')}
-            else{document.getElementById('waFloat').style.display='none'}
-        }).catch(()=>{});
-    </script>
+
 </body>
 </html>

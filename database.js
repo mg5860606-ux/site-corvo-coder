@@ -67,6 +67,7 @@ db.exec(`
 try { db.exec("ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'"); } catch {}
 try { db.exec("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT"); } catch {}
 try { db.exec("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT"); } catch {}
+try { db.exec("ALTER TABLE users ADD COLUMN model TEXT DEFAULT 'models/gemini-3.5-flash'"); } catch {}
 
 function hashPassword(password, salt) {
     if (!salt) salt = crypto.randomBytes(16).toString('hex');
@@ -87,6 +88,33 @@ function generateToken() {
 setInterval(() => {
     db.prepare("DELETE FROM sessions WHERE expires_at < datetime('now')").run();
 }, 60 * 60 * 1000);
+
+// Password reset tokens
+db.exec(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+        token TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        used INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+`);
+
+// Analytics events table
+db.exec(`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_type TEXT NOT NULL,
+        user_id TEXT,
+        page TEXT,
+        endpoint TEXT,
+        metadata TEXT,
+        ip TEXT,
+        user_agent TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+    );
+`);
 
 module.exports = {
     db,
@@ -116,9 +144,9 @@ module.exports = {
 
     getSession(token) {
         if (!token) return null;
-        const session = db.prepare("SELECT s.*, u.name, u.email, u.credits, u.plan, u.stripe_customer_id, u.stripe_subscription_id FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime('now')").get(token);
+        const session = db.prepare("SELECT s.*, u.name, u.email, u.credits, u.plan, u.model, u.stripe_customer_id, u.stripe_subscription_id FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ? AND s.expires_at > datetime('now')").get(token);
         if (!session) return null;
-        return { id: session.user_id, name: session.name, email: session.email, credits: session.credits, plan: session.plan || 'free', stripe_customer_id: session.stripe_customer_id, stripe_subscription_id: session.stripe_subscription_id };
+        return { id: session.user_id, name: session.name, email: session.email, credits: session.credits, plan: session.plan || 'free', model: session.model || 'models/gemini-3.5-flash', stripe_customer_id: session.stripe_customer_id, stripe_subscription_id: session.stripe_subscription_id };
     },
 
     logout(token) {
@@ -126,7 +154,7 @@ module.exports = {
     },
 
     getUser(id) {
-        return db.prepare('SELECT id, name, email, credits, created_at FROM users WHERE id = ?').get(id);
+        return db.prepare('SELECT id, name, email, credits, model, created_at FROM users WHERE id = ?').get(id);
     },
     getUserByEmail(email) {
         return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
@@ -229,5 +257,116 @@ module.exports = {
     },
     getUserByStripeSub(subscriptionId) {
         return db.prepare('SELECT id, name, email, credits, plan FROM users WHERE stripe_subscription_id = ?').get(subscriptionId);
+    },
+
+    // === PASSWORD RESET ===
+    createPasswordReset(userId) {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+        db.prepare('INSERT INTO password_resets (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, expiresAt);
+        return token;
+    },
+    getPasswordReset(token) {
+        return db.prepare("SELECT * FROM password_resets WHERE token = ? AND used = 0 AND expires_at > datetime('now')").get(token);
+    },
+    usePasswordReset(token) {
+        db.prepare('UPDATE password_resets SET used = 1 WHERE token = ?').run(token);
+    },
+    updatePassword(userId, password) {
+        const { hash, salt } = hashPassword(password);
+        db.prepare('UPDATE users SET password_hash = ?, salt = ?, updated_at = datetime("now") WHERE id = ?').run(hash, salt, userId);
+    },
+
+    // === ANALYTICS ===
+    trackEvent(eventType, data = {}) {
+        const stmt = db.prepare('INSERT INTO analytics_events (event_type, user_id, page, endpoint, metadata, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        stmt.run(
+            eventType,
+            data.userId || null,
+            data.page || null,
+            data.endpoint || null,
+            data.metadata ? JSON.stringify(data.metadata) : null,
+            data.ip || null,
+            data.userAgent || null
+        );
+    },
+
+    getAnalyticsSummary(since = '24 hours') {
+        const day = db.prepare("SELECT COUNT(*) as count FROM analytics_events WHERE created_at > datetime('now', ?)").get('-' + since);
+        const uniqueVisitors = db.prepare("SELECT COUNT(DISTINCT COALESCE(user_id, ip)) as count FROM analytics_events WHERE created_at > datetime('now', ?)").get('-' + since);
+        const uniqueUsers = db.prepare("SELECT COUNT(DISTINCT user_id) as count FROM analytics_events WHERE user_id IS NOT NULL AND created_at > datetime('now', ?)").get('-' + since);
+        const byType = db.prepare("SELECT event_type, COUNT(*) as count FROM analytics_events WHERE created_at > datetime('now', ?) GROUP BY event_type ORDER BY count DESC").all('-' + since);
+        const byPage = db.prepare("SELECT page, COUNT(*) as count FROM analytics_events WHERE page IS NOT NULL AND created_at > datetime('now', ?) GROUP BY page ORDER BY count DESC").all('-' + since);
+        const byEndpoint = db.prepare("SELECT endpoint, COUNT(*) as count FROM analytics_events WHERE endpoint IS NOT NULL AND created_at > datetime('now', ?) GROUP BY endpoint ORDER BY count DESC").all('-' + since);
+        const hourly = db.prepare(`
+            SELECT strftime('%H', created_at) as hour, COUNT(*) as count 
+            FROM analytics_events 
+            WHERE created_at > datetime('now', ?) 
+            GROUP BY hour ORDER BY hour
+        `).all('-' + since);
+        return {
+            total: day.count,
+            uniqueVisitors: uniqueVisitors.count,
+            uniqueUsers: uniqueUsers.count,
+            byType,
+            byPage,
+            byEndpoint,
+            hourly
+        };
+    },
+
+    getAnalyticsHistory(days = 30) {
+        const daily = db.prepare(`
+            SELECT date(created_at) as date, COUNT(*) as count,
+                   COUNT(DISTINCT COALESCE(user_id, ip)) as visitors,
+                   COUNT(DISTINCT user_id) as users
+            FROM analytics_events 
+            WHERE created_at > datetime('now', ?)
+            GROUP BY date ORDER BY date
+        `).all('-' + days + ' days');
+        return daily;
+    },
+
+    getAnalyticsMessages(days = 30) {
+        return db.prepare(`
+            SELECT date(created_at) as date, COUNT(*) as count
+            FROM messages
+            WHERE created_at > datetime('now', ?)
+            GROUP BY date ORDER BY date
+        `).all('-' + days + ' days');
+    },
+
+    getAnalyticsTopUsers(limit = 10) {
+        return db.prepare(`
+            SELECT u.name, u.email, u.credits, COUNT(e.id) as events
+            FROM users u
+            LEFT JOIN analytics_events e ON e.user_id = u.id
+            AND e.created_at > datetime('now', '-7 days')
+            GROUP BY u.id
+            ORDER BY events DESC
+            LIMIT ?
+        `).all(limit);
+    },
+
+    getAnalyticsSessions(days = 7) {
+        // Count active sessions (last 30 min = active)
+        const activeNow = db.prepare("SELECT COUNT(*) as count FROM analytics_events WHERE created_at > datetime('now', '-5 minutes')").get();
+        const activeHour = db.prepare("SELECT COUNT(*) as count FROM analytics_events WHERE created_at > datetime('now', '-1 hour')").get();
+        const newUsers = db.prepare("SELECT COUNT(*) as count FROM users WHERE created_at > datetime('now', ?)").get('-' + days + ' days');
+        const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get();
+        const totalChats = db.prepare('SELECT COUNT(*) as count FROM chats').get();
+        const totalMessages = db.prepare('SELECT COUNT(*) as count FROM messages').get();
+        return {
+            activeNow: activeNow.count,
+            activeHour: activeHour.count,
+            newUsers: newUsers.count,
+            totalUsers: totalUsers.count,
+            totalChats: totalChats.count,
+            totalMessages: totalMessages.count
+        };
+    },
+
+    pruneAnalytics(olderThanDays = 90) {
+        db.prepare('DELETE FROM analytics_events WHERE created_at < datetime("now", ?)').run('-' + olderThanDays + ' days');
     }
 };

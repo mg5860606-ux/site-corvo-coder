@@ -1,12 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#7c5cfc"/>
       <stop offset="100%" stop-color="#f472b6"/>
     </linearGradient>
   </defs>
-  <rect width="128" height="128" rx="28" fill="#12121f" stroke="#1e1e35" stroke-width="2"/>
-  <rect x="8" y="8" width="112" height="112" rx="22" fill="url(#bg)" opacity="0.15"/>
-  <text x="64" y="82" font-family="system-ui" font-size="60" font-weight="bold" fill="#e8e8f0" text-anchor="middle">🐦</text>
-  <text x="64" y="122" font-family="system-ui" font-size="14" font-weight="bold" fill="#7c5cfc" text-anchor="middle">CC</text>
+  <rect width="512" height="512" rx="120" fill="#12121f"/>
+  <!-- Corvo silhouette -->
+  <g transform="translate(256,280) scale(1.1)">
+    <path d="M0-160C-40-160-80-140-100-100C-110-80-105-60-95-45L-120-20C-130-5-135 10-130 25C-125 35-115 40-105 38L-80 35C-70 50-55 60-40 65L-45 85C-48 95-42 105-32 108L-20 110L-10 95C0 98 10 98 20 95L30 110L42 108C52 105 58 95 55 85L50 65C65 60 80 50 90 35L115 38C125 40 135 35 140 25C145 10 140-5 130-20L105-45C115-60 120-80 110-100C90-140 50-160 0-160Z" fill="url(#g)"/>
+    <!-- Eyes -->
+    <circle cx="-30" cy="-110" r="8" fill="#12121f"/>
+    <circle cx="30" cy="-110" r="8" fill="#12121f"/>
+    <!-- Eye shine -->
+    <circle cx="-27" cy="-112" r="3" fill="#7c5cfc" opacity="0.6"/>
+    <circle cx="33" cy="-112" r="3" fill="#7c5cfc" opacity="0.6"/>
+    <!-- Beak -->
+    <path d="M-8-85L0-70L8-85Z" fill="#f472b6"/>
+    <!-- Code brackets -->
+    <text x="0" y="60" text-anchor="middle" font-family="monospace" font-size="28" font-weight="bold" fill="#6b7280">&lt;/&gt;</text>
+  </g>
 </svg>
