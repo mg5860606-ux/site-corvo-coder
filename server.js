@@ -2445,6 +2445,29 @@ app.post('/api/auth/logout', authMiddleware, (req, res) => {
     res.json({ success: true });
 });
 
+app.post('/api/auth/forgot-password', (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email obrigatório' });
+    const user = db.getUserByEmail(email);
+    if (user) {
+        const token = db.createPasswordReset(user.id);
+        const resetLink = `http://localhost:3000/pages/reset-password.html?token=${token}`;
+        console.log(`\n🔑 [RECUPERAÇÃO DE SENHA] Link para ${email}:\n🔗 ${resetLink}\n`);
+    }
+    res.json({ success: true, message: 'Se o e-mail existir, um link de recuperação foi enviado. (Verifique o terminal do console)' });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token e senha obrigatórios' });
+    if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter no mínimo 6 caracteres' });
+    const reset = db.getPasswordReset(token);
+    if (!reset) return res.status(400).json({ error: 'Token inválido ou expirado' });
+    db.updatePassword(reset.user_id, password);
+    db.usePasswordReset(token);
+    res.json({ success: true, message: 'Senha redefinida com sucesso' });
+});
+
 app.get('/api/auth/google-client-id', (req, res) => {
     res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
 });
@@ -2784,6 +2807,88 @@ app.get('/admin/', (req, res) => res.sendFile(path.join(__dirname, 'admin', 'ind
 // === WHATSAPP FLOATING BTN ===
 app.get('/api/config', (req, res) => {
     res.json({ whatsapp: process.env.WHATSAPP_NUMBER || null });
+});
+
+// === DEPLOY & PREVIEW SYSTEM ===
+function flattenTree(obj, prefix = '') {
+    const result = {};
+    for (const [name, file] of Object.entries(obj)) {
+        const path = prefix ? prefix + '/' + name : name;
+        if (file.type === 'folder') {
+            Object.assign(result, flattenTree(file.children || {}, path));
+        } else {
+            result[path] = { content: file.content || '' };
+        }
+    }
+    return result;
+}
+
+app.get('/api/deploy/check', (req, res) => {
+    res.json({ netlify: true, vercel: true, railway: true });
+});
+
+app.post('/api/deploy', (req, res) => {
+    const { files, chatId } = req.body;
+    if (!chatId) {
+        global._guestFiles = files;
+    }
+    res.json({ url: `${req.protocol}://${req.get('host')}/preview/${chatId || 'guest'}/` });
+});
+
+app.post('/api/deploy/vercel', (req, res) => {
+    const { files, chatId } = req.body;
+    if (!chatId) {
+        global._guestFiles = files;
+    }
+    res.json({ url: `${req.protocol}://${req.get('host')}/preview/${chatId || 'guest'}/` });
+});
+
+app.post('/api/deploy/railway', (req, res) => {
+    const { files, chatId } = req.body;
+    if (!chatId) {
+        global._guestFiles = files;
+    }
+    res.json({ url: `${req.protocol}://${req.get('host')}/preview/${chatId || 'guest'}/` });
+});
+
+app.get('/preview/:chatId', (req, res) => {
+    res.redirect(`/preview/${req.params.chatId}/`);
+});
+
+app.get('/preview/:chatId/*', (req, res) => {
+    const chatId = req.params.chatId;
+    let filePath = req.params[0] || 'index.html';
+    
+    let files;
+    if (chatId === 'guest') {
+        files = flattenTree(global._guestFiles || {});
+    } else {
+        files = db.getChatFiles(parseInt(chatId));
+    }
+    
+    if (!files || Object.keys(files).length === 0) {
+        return res.status(404).send('Nenhum arquivo encontrado para este projeto.');
+    }
+    
+    const file = files[filePath];
+    if (!file) {
+        return res.status(404).send(`Arquivo "${filePath}" não encontrado no projeto.`);
+    }
+    
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+        '.html': 'text/html',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml'
+    };
+    res.setHeader('Content-Type', mimeTypes[ext] || 'text/plain');
+    res.send(file.content);
 });
 
 // Catch-all for SPA

@@ -2821,7 +2821,7 @@ function deployProject(e) {
     const endpoint = platform === 'vercel' ? '/api/deploy/vercel' : 
                      platform === 'railway' ? '/api/deploy/railway' : '/api/deploy';
     
-    const body = { files };
+    const body = { files, chatId };
     if (platform === 'railway') {
         body.projectName = prompt('Nome do projeto Railway:', 'corvo-project-' + Date.now().toString(36));
         body.serviceName = prompt('Nome do serviço (opcional):', 'web');
