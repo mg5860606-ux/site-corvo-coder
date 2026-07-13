@@ -228,7 +228,7 @@ function renderMessages() {
         }
 
         div.innerHTML = `
-            <div class="msg-avatar ${isUser ? 'user' : 'ai'}">${isUser ? user.name?.charAt(0)?.toUpperCase() || 'U' : '<img src="logo.jpg" alt="AI">'}</div>
+            <div class="msg-avatar ${isUser ? 'user' : 'ai'}">${isUser ? user?.name?.charAt(0)?.toUpperCase() || 'U' : '<img src="logo.jpg" alt="AI">'}</div>
             <div class="msg-body">
                 <div class="msg-name">
                     <span>${isUser ? 'Você' : 'Corvo Coder'}</span>
