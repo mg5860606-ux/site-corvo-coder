@@ -129,7 +129,7 @@ module.exports = {
         const token = generateToken();
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, id, expiresAt);
-        return { token, user: { id, name, email, credits: 100 } };
+        return { token, user: { id, name, email, credits: 50 } };
     },
 
     login(email, password) {

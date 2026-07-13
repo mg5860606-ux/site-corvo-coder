@@ -45,12 +45,14 @@ function updateCredits() {
     const side = document.getElementById('sideCredits');
     
     if (!user) {
+        const guestCredits = parseInt(localStorage.getItem('cc_guest_credits') || '10');
+        const pct = Math.max(0, Math.min(100, (guestCredits / 10) * 100));
         if (fill) {
-            fill.style.width = '100%';
-            fill.style.background = 'linear-gradient(90deg,#7c3aed,#a78bfa)';
+            fill.style.width = pct + '%';
+            fill.style.background = pct < 20 ? 'linear-gradient(90deg,#ef4444,#f97316)' : 'linear-gradient(90deg,#7c3aed,#a78bfa)';
         }
-        if (text) text.textContent = 'Convidado (50 cr)';
-        if (side) side.textContent = 'Modo Convidado';
+        if (text) text.textContent = `Convidado (${guestCredits}/10 cr)`;
+        if (side) side.textContent = `${guestCredits} crédito(s) restante(s)`;
         return;
     }
 
@@ -750,6 +752,16 @@ async function send() {
     const hasImages = pendingImages.length > 0;
     const hasAudio = !!pendingAudio;
 
+    if (!user) {
+        const guestCredits = parseInt(localStorage.getItem('cc_guest_credits') || '10');
+        if (guestCredits < 1) {
+            showToast('⚡ Créditos de convidado esgotados! Crie uma conta para ganhar 50 créditos.', 'error');
+            chatHistory.push({ id: 'e-' + Date.now(), role: 'assistant', content: '⚡ Seus créditos de convidado acabaram. Faça login ou crie uma conta gratuita para ganhar **50 créditos**!' });
+            renderMessages();
+            return;
+        }
+    }
+
     if (!text && !hasImages && !hasAudio) return;
 
 
@@ -866,9 +878,19 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
         const reply = data.reply || 'Desculpe, erro ao processar.';
 
         // Atualiza créditos em tempo real sem nova requisição ao servidor
-        if (typeof data.creditsLeft === 'number') {
+        if (user && typeof data.creditsLeft === 'number') {
             credits = data.creditsLeft;
             updateCredits();
+        } else if (!user) {
+            // Dedução local de créditos para convidados
+            let cost = 1;
+            const files = data.files || null;
+            if (files && Object.keys(files).length > 0) cost = 3;
+            let guestCredits = parseInt(localStorage.getItem('cc_guest_credits') || '10');
+            guestCredits = Math.max(0, guestCredits - cost);
+            localStorage.setItem('cc_guest_credits', guestCredits.toString());
+            updateCredits();
+            showCreditCost(cost);
         }
         if (data.creditsUsed > 0 && user) {
             showCreditCost(data.creditsUsed);
@@ -1145,6 +1167,12 @@ async function init() {
             }
         } catch {
             // Server not available — anonymous mode
+        }
+    }
+
+    if (!user) {
+        if (!localStorage.getItem('cc_guest_credits')) {
+            localStorage.setItem('cc_guest_credits', '10');
         }
     }
 
