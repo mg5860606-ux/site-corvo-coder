@@ -85,7 +85,7 @@ function loadData() {
         files = data.files || {};
         chatId = data.chatId || null;
         if (data.preview) {
-            document.getElementById('previewFrame').srcdoc = data.preview;
+            document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(data.preview);
         }
         // Load snapshot for diff
         const snapRaw = localStorage.getItem('cc_workspace_snapshot');
@@ -105,6 +105,49 @@ function loadData() {
     } catch {}
 }
 
+// Build a self-contained srcdoc by inlining all referenced CSS and JS files
+function buildPreviewSrcdoc(htmlContent) {
+    if (!htmlContent) return '';
+    let result = htmlContent;
+
+    // Inline <link rel="stylesheet" href="..."> 
+    result = result.replace(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']+)["'][^>]*\/?>/gi, (match, href) => {
+        // Remove leading ./ or /
+        const normalized = href.replace(/^\.?\//, '');
+        const cssFile = getFileByPath(normalized);
+        if (cssFile?.content) {
+            return `<style>/* inlined: ${normalized} */\n${cssFile.content}\n</style>`;
+        }
+        return match; // keep original if not found
+    });
+
+    // Also catch <link href="..." rel="stylesheet">
+    result = result.replace(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']stylesheet["'][^>]*\/?>/gi, (match, href) => {
+        const normalized = href.replace(/^\.?\//, '');
+        const cssFile = getFileByPath(normalized);
+        if (cssFile?.content) {
+            return `<style>/* inlined: ${normalized} */\n${cssFile.content}\n</style>`;
+        }
+        return match;
+    });
+
+    // Inline <script src="...">
+    result = result.replace(/<script([^>]+)src=["']([^"']+)["']([^>]*)><\/script>/gi, (match, pre, src, post) => {
+        const normalized = src.replace(/^\.?\//, '');
+        // Skip external CDN scripts
+        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//')) {
+            return match;
+        }
+        const jsFile = getFileByPath(normalized);
+        if (jsFile?.content) {
+            return `<script${pre}${post}>/* inlined: ${normalized} */\n${jsFile.content}\n</script>`;
+        }
+        return match;
+    });
+
+    return result;
+}
+
 function autoOpenPreview() {
     const panel = document.getElementById('previewPanel');
     const btn = document.getElementById('btnPreview');
@@ -121,36 +164,29 @@ function autoOpenPreview() {
     if (indexFile?.content) {
         previewContent = indexFile.content;
     } else {
-        // Check app/index.html
         const appIndex = files['app']?.children?.['index.html'];
         if (appIndex?.content) {
             previewContent = appIndex.content;
         } else {
-            // Check public/index.html
             const publicIndex = files['public']?.children?.['index.html'];
             if (publicIndex?.content) {
                 previewContent = publicIndex.content;
             } else {
-                // Try any .html file in root
                 const htmlFile = Object.entries(files).find(([name, f]) => 
                     (name.endsWith('.html') || name.endsWith('.htm')) && f?.content
                 );
-                if (htmlFile) {
-                    previewContent = htmlFile[1].content;
-                }
+                if (htmlFile) previewContent = htmlFile[1].content;
             }
         }
     }
     
     if (!previewContent) return;
     
-    // Auto-open preview
-    frame.srcdoc = previewContent;
+    frame.srcdoc = buildPreviewSrcdoc(previewContent);
     panel.style.display = 'flex';
     panel.classList.remove('hidden');
     if (btn) btn.style.background = 'rgba(255,255,255,0.1)';
     
-    // Show toast notification (only once per session)
     if (!window._previewAutoOpened) {
         window._previewAutoOpened = true;
         setTimeout(() => showToast('success', '👁️ Preview aberto automaticamente'), 500);
@@ -229,7 +265,7 @@ function createMonacoEditor(content, language) {
             renderTabs();
             updateStatusBar(activeTab, val);
             saveWorkspace();
-            // Auto-save indicator: show saving then saved
+            // Auto-save indicator
             const saveEl = document.getElementById('sbAutoSave');
             if (saveEl) {
                 saveEl.textContent = '⟳ Salvando...';
@@ -238,11 +274,20 @@ function createMonacoEditor(content, language) {
                 saveStatusTimeout = setTimeout(() => {
                     saveEl.textContent = '✓ Salvo';
                     saveEl.style.color = '#4ec9b0';
-                    setTimeout(() => {
-                        saveEl.textContent = '';
-                        saveEl.style.color = '';
-                    }, 2000);
+                    setTimeout(() => { saveEl.textContent = ''; saveEl.style.color = ''; }, 2000);
                 }, 400);
+            }
+            // Live preview: update when editing HTML/CSS/JS
+            const panel = document.getElementById('previewPanel');
+            if (panel && panel.style.display !== 'none') {
+                const indexContent = files['index.html']?.content;
+                if (indexContent) {
+                    clearTimeout(window._previewDebounce);
+                    window._previewDebounce = setTimeout(() => {
+                        const frame = document.getElementById('previewFrame');
+                        if (frame) frame.srcdoc = buildPreviewSrcdoc(indexContent);
+                    }, 600);
+                }
             }
             // Broadcast change to collaboration room
             sendCollabFileChange(activeTab, val);
@@ -1283,7 +1328,7 @@ function insertDesignComponent() {
     // Update preview
     const indexContent = files['index.html']?.content;
     if (indexContent) {
-        document.getElementById('previewFrame').srcdoc = indexContent;
+        document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(indexContent);
     }
     showToast('success', `${comp.icon} ${comp.name} inserido!`);
     xtermWrite(`✓ Componente "${comp.name}" inserido no index.html\n`, 'green');
@@ -1652,7 +1697,7 @@ function insertComponentToCode(comp) {
     // Update preview
     const indexContent = files['index.html']?.content;
     if (indexContent) {
-        document.getElementById('previewFrame').srcdoc = indexContent;
+        document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(indexContent);
     }
     xtermWrite(`✓ Componente "${comp.name}" inserido no index.html via drag & drop\n`, 'green');
 }
@@ -1904,7 +1949,7 @@ function syncDesignToCode() {
         if (activeTab === 'index.html' && monacoEditor) {
             monacoEditor.setValue(content);
         }
-        document.getElementById('previewFrame').srcdoc = content;
+        document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(content);
         showToast('success', '✓ Código sincronizado com o design');
     } else {
         showToast('error', 'Não foi possível encontrar <body> no HTML');
@@ -2224,7 +2269,7 @@ function handleCollabMessage(msg) {
                 if (path === 'index.html' || path.endsWith('/index.html')) {
                     const frame = document.getElementById('previewFrame');
                     if (frame && frame.srcdoc && frame.style.display !== 'none') {
-                        frame.srcdoc = content;
+                        frame.srcdoc = buildPreviewSrcdoc(content);
                     }
                 }
                 
@@ -2732,7 +2777,8 @@ function togglePreview() {
 
 function refreshPreview() {
     const frame = document.getElementById('previewFrame');
-    if (frame) frame.srcdoc = frame.srcdoc;
+    const indexContent = files['index.html']?.content;
+    if (frame && indexContent) frame.srcdoc = buildPreviewSrcdoc(indexContent);
 }
 
 function openPreviewInNewTab() {
@@ -3074,7 +3120,7 @@ function runProject() {
     const indexFile = files['index.html'] || files['app']?.children?.['index.html'];
     if (indexFile?.content) {
         togglePreview();
-        document.getElementById('previewFrame').srcdoc = indexFile.content;
+        document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(indexFile.content);
         xtermWrite('✓ Preview atualizado\n', 'green');
     } else {
         xtermWrite('Nenhum index.html encontrado\n', 'yellow');
