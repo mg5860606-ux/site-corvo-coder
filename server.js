@@ -2622,6 +2622,46 @@ app.get('/api/chats/:id/files', authMiddleware, (req, res) => {
     res.json({ files });
 });
 
+// === PROJECTS ===
+app.get('/api/projects', authMiddleware, (req, res) => {
+    try {
+        const chats = db.listChats(req.user.id);
+        const projects = chats.map(chat => {
+            const messages = db.getMessages(chat.id);
+            const files = db.getChatFiles(chat.id);
+            const fileList = Object.keys(files);
+            const hasCode = fileList.length > 0;
+
+            // Extrair preview do index.html se existir
+            const previewHtml = files['index.html']?.content || null;
+
+            // Primeira mensagem do usuário = descrição do projeto
+            const firstUserMsg = messages.find(m => m.role === 'user');
+            const lastMsg = messages[messages.length - 1];
+
+            return {
+                id: chat.id,
+                title: chat.title,
+                description: firstUserMsg?.content?.substring(0, 120) || '',
+                hasCode,
+                fileCount: fileList.length,
+                fileList: fileList.slice(0, 5),
+                messageCount: messages.length,
+                previewHtml: previewHtml ? previewHtml.substring(0, 500) : null,
+                lastMessage: lastMsg?.content?.substring(0, 80) || '',
+                lastRole: lastMsg?.role || 'user',
+                createdAt: chat.created_at,
+                updatedAt: chat.updated_at,
+            };
+        });
+        res.json({ projects });
+    } catch (err) {
+        console.error('Error loading projects:', err);
+        res.status(500).json({ error: 'Erro ao carregar projetos' });
+    }
+});
+
+
 app.get('/api/credits', authMiddleware, (req, res) => {
     const credits = db.getCredits(req.user.id);
     res.json({ credits });

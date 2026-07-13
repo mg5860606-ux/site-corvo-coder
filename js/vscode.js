@@ -110,8 +110,138 @@ function loadData() {
         autoOpenPreview();
         // Save version for undo
         saveVersion(files);
+        // Load other projects in sidebar
+        loadProjectsTree();
     } catch {}
 }
+
+// === COLLAPSABLE SIDEBAR SECTIONS ===
+function toggleSection(section) {
+    const isFiles = section === 'Files';
+    const content = document.getElementById(isFiles ? 'fileTree' : 'projectsTree');
+    const arrow = document.getElementById(isFiles ? 'arrowSectionFiles' : 'arrowSectionProjects');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.classList.remove('collapsed');
+        arrow.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        arrow.classList.add('collapsed');
+        arrow.textContent = '▶';
+    }
+}
+
+async function loadProjectsTree() {
+    const token = localStorage.getItem('cc_token');
+    const tree = document.getElementById('projectsTree');
+    const header = document.getElementById('projectsSectionHeader');
+    if (!tree) return;
+
+    if (!token) {
+        if (header) header.style.display = 'none';
+        tree.style.display = 'none';
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/chats', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const chats = data.chats || [];
+
+        if (chats.length === 0) {
+            tree.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:0.7rem">Nenhum outro projeto</div>';
+            return;
+        }
+
+        tree.innerHTML = chats.map(c => {
+            const isActive = c.id === chatId;
+            return `
+                <div class="projects-tree-item ${isActive ? 'active' : ''}" onclick="switchWorkspaceChat(${c.id})">
+                    <span class="project-icon">💬</span>
+                    <span class="project-name" title="${c.title}">${c.title}</span>
+                    <span class="project-badge">Chat</span>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        tree.innerHTML = '<div style="padding:12px;color:var(--muted);font-size:0.7rem">Erro ao carregar projetos</div>';
+    }
+}
+
+async function switchWorkspaceChat(newChatId) {
+    if (newChatId === chatId) return;
+    const token = localStorage.getItem('cc_token');
+    if (!token) return;
+
+    try {
+        // Load files from server for chosen chat
+        const res = await fetch(`/api/chats/${newChatId}/files`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        // Get chat title
+        const chatRes = await fetch(`/api/chats/${newChatId}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const chatData = await chatRes.json();
+        const chatTitle = chatData.chat?.title || 'meu-projeto';
+
+        // Clean project name format
+        const cleanName = chatTitle
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '-')
+            .substring(0, 30) || 'meu-projeto';
+
+        // Update local variables
+        chatId = newChatId;
+        files = data.files || {};
+        previousFiles = JSON.parse(JSON.stringify(files));
+
+        // Save to localStorage workspace state
+        localStorage.setItem('cc_workspace', JSON.stringify({
+            chatId,
+            project: cleanName,
+            files,
+            preview: files['index.html']?.content || ''
+        }));
+        localStorage.setItem('cc_workspace_snapshot', JSON.stringify(previousFiles));
+
+        // Clear active editor and open tabs
+        openFiles = [];
+        activeFile = null;
+        const tabsContainer = document.getElementById('tbTabs');
+        if (tabsContainer) tabsContainer.innerHTML = '';
+        if (editor) editor.setValue('');
+
+        // Update labels
+        const nameLabel = document.getElementById('projectNameLabel');
+        if (nameLabel) nameLabel.textContent = cleanName.toUpperCase();
+        document.title = cleanName + ' — VS Code';
+
+        // Re-render and refresh
+        renderFileTree();
+        loadProjectsTree();
+
+        // Open preview if index.html exists
+        if (files['index.html']) {
+            document.getElementById('previewFrame').srcdoc = buildPreviewSrcdoc(files['index.html'].content);
+            openFile('index.html');
+        } else {
+            document.getElementById('previewFrame').srcdoc = '';
+        }
+    } catch (e) {
+        alert('Erro ao alternar de projeto: ' + e.message);
+    }
+}
+
+window.toggleSection = toggleSection;
+window.switchWorkspaceChat = switchWorkspaceChat;
 
 // Build a self-contained srcdoc by inlining all referenced CSS and JS files
 function buildPreviewSrcdoc(htmlContent) {

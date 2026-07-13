@@ -131,10 +131,21 @@
                             </button>
                         </div>
                     </div>
-                    <div class="project-header" id="projectHeader">
-                        <span class="project-name-sidebar">CORVO PROJECT</span>
+                    <!-- SEÇÃO 1: ARQUIVOS DO PROJETO ATIVO -->
+                    <div class="section-header active" onclick="toggleSection('Files')">
+                        <span class="section-arrow" id="arrowSectionFiles">▼</span>
+                        <span class="project-name-sidebar" id="projectNameLabel">MEU PROJETO</span>
                     </div>
-                    <div class="sidebar-content" id="fileTree"></div>
+                    <div class="sidebar-content" id="fileTree" style="flex: 1; overflow-y: auto; max-height: 50%;"></div>
+                    
+                    <!-- SEÇÃO 2: OUTROS PROJETOS / CONVERSAS -->
+                    <div class="section-header active" id="projectsSectionHeader" onclick="toggleSection('Projects')">
+                        <span class="section-arrow" id="arrowSectionProjects">▼</span>
+                        <span class="project-name-sidebar">OUTROS PROJETOS & CHATS</span>
+                    </div>
+                    <div class="sidebar-content" id="projectsTree" style="flex: 1; overflow-y: auto; border-top: 1px solid var(--border);">
+                        <!-- Lista de outros projetos do banco -->
+                    </div>
                 </div>
 
                 <!-- SEARCH -->
