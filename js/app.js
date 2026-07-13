@@ -734,20 +734,43 @@ function getPreviewHTML() {
 
 // === WORKSPACE ===
 
+function cleanProjectName(title) {
+    if (!title) return 'meu-projeto';
+    let name = title.toLowerCase();
+    
+    // Remove prefixes like "cria um", "crie um", "quero um", etc.
+    const prefixes = [
+        /^(cria|crie|criar|gerar|gere|faz|fazer|desenvolve|desenvolver)\s+(um|uma|o|a)\s+/gi,
+        /^(cria|crie|criar|gerar|gere|faz|fazer|desenvolve|desenvolver)\s+/gi,
+        /^(quero|preciso|monte|montar)\s+(de|um|uma|o|a)\s+/gi,
+        /^(quero|preciso|monte|montar)\s+/gi,
+        /^(site|app|sistema|pagina|página)\s+para\s+/gi
+    ];
+    for (const prefix of prefixes) {
+        name = name.replace(prefix, '');
+    }
+    
+    name = name
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .substring(0, 30);
+        
+    return name || 'meu-projeto';
+}
+
 function openWorkspace() {
-    // Generate project name from chat title or last AI message snippet
-    let projectName = 'meu-projeto';
+    let rawTitle = '';
     if (currentChatId && savedChats) {
         const chat = savedChats.find(c => c.id === currentChatId);
-        if (chat?.title) {
-            projectName = chat.title
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, '')
-                .trim()
-                .replace(/\s+/g, '-')
-                .substring(0, 30);
-        }
+        if (chat?.title) rawTitle = chat.title;
     }
+    if (!rawTitle && chatHistory.length > 0) {
+        const firstUser = chatHistory.find(m => m.role === 'user');
+        if (firstUser) rawTitle = firstUser.content;
+    }
+    
+    const projectName = cleanProjectName(rawTitle);
     localStorage.setItem('cc_workspace', JSON.stringify({
         chatId: currentChatId,
         project: projectName,
@@ -965,10 +988,6 @@ async function doSend(text, apiImages, apiAudio, queuedTexts) {
 
         await loadChats();
         renderMessages();
-        // Auto-play: speak the AI response
-        if (reply && !reply.startsWith('Desculpe, erro')) {
-            toggleSpeech(aiMsg.id, reply);
-        }
     } catch (err) {
         const thinkEl = document.getElementById(thinkId);
         if (thinkEl) thinkEl.remove();
